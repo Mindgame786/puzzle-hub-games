@@ -7767,6 +7767,9 @@ const ProfilePage = (() => {
         tabindex: '0',
         'aria-label': 'Change avatar',
         onClick: () => changeAvatar(),
+        onKeyDown: (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); changeAvatar(); }
+        },
         style: 'cursor:pointer',
       }),
       Utils.el('div', { className: 'profile-info' }, [
@@ -7777,6 +7780,9 @@ const ProfilePage = (() => {
           style: 'cursor:pointer',
           'aria-label': 'Edit name',
           onClick: () => editName(),
+          onKeyDown: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editName(); }
+          },
         }),
         Utils.el('p', {
           textContent: `Member since ${new Date(profile.createdAt || Date.now()).toLocaleDateString()}`,
@@ -9152,7 +9158,6 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
 
     app.appendChild(Utils.el('main', {
       id: 'main-content',
-      role: 'main',
       tabindex: '-1',
     }));
 
@@ -9325,12 +9330,9 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
         Logger.info('app_ready', {
           version: (window.Config && Config.get('version')) || (window.PH && PH.version),
         });
-      } else {
-        console.log('%cPuzzleHub ready', 'font-size:13px;font-weight:700;color:#4527d6;letter-spacing:-0.02em');
       }
     } catch (err) {
       if (window.ErrorBoundary) ErrorBoundary.showFatal(err);
-      else console.error(err);
     }
   }
 
