@@ -90,6 +90,35 @@ setTimeout(() => {
       ok('Footer present', !!window.document.querySelector('.app-footer'));
     } catch (e) { ok('Home render', false); console.log('  home err', e.message); }
 
+    // Secondary pages must NOT be in the main bundle: load the chunk and verify
+    // each secondary route renders. This mirrors the lazy load path.
+    try {
+      const secCode = fs.readFileSync(path.join(__dirname, 'js', 'pages-secondary.min.js'), 'utf8');
+      const ss = window.document.createElement('script');
+      ss.textContent = secCode;
+      window.document.body.appendChild(ss);
+      // Mark the chunk as loaded so the router's lazy loader resolves
+      // synchronously (in jsdom there is no HTTP to fetch it).
+      if (window.Perf && window.Perf.loaded) window.Perf.loaded.add('js/pages-secondary.min.js');
+      ok('Secondary chunk parses + exports pages', typeof window.AboutPage === 'object');
+      const secRoutes = [
+        ['/about', '.content-page'],
+        ['/how-to-play', '.guide-card'],
+        ['/leaderboard', '.lb-list'],
+        ['/community', '.tabs'],
+        ['/blog', '.blog-grid'],
+        ['/privacy-policy', '.content-page'],
+        ['/contact', 'form'],
+      ];
+      for (const [route, selector] of secRoutes) {
+        window.location.hash = '#' + route;
+        try { await window.Router.resolve(); } catch (e) {}
+        await new Promise((r) => setTimeout(r, 40));
+        const m = window.document.getElementById('main-content');
+        ok(`route ${route} renders ${selector}`, !!m && !!m.querySelector(selector));
+      }
+    } catch (e) { ok('secondary chunk load', false); console.log('  sec err', e.message); }
+
     try {
       const Sudoku = window.SudokuGame;
       const host = window.document.createElement('div');

@@ -59,6 +59,24 @@ function isGame(name) {
   return name.startsWith('js/games/');
 }
 
+// Content pages that are never part of the first paint (home). They share
+// appendSiteFooter and use only window-exported globals, so they load safely
+// as a separate chunk on first navigation. Keeping them out of the main bundle
+// cuts the render-critical JS payload on mobile.
+const SECONDARY_PAGES = new Set([
+  'js/pages/about.js',
+  'js/pages/howto.js',
+  'js/pages/leaderboard.js',
+  'js/pages/community.js',
+  'js/pages/blog.js',
+  'js/pages/privacy.js',
+  'js/pages/contact.js',
+]);
+
+function isSecondaryPage(name) {
+  return SECONDARY_PAGES.has(name);
+}
+
 function banner(label) {
   return `/*! PuzzleHub ${label} — built ${new Date().toISOString().slice(0, 10)} */\n`;
 }
@@ -83,10 +101,13 @@ async function buildJs() {
   const sections = splitModules(src);
 
   let main = '';
+  let secondary = '';
   const games = {};
   for (const s of sections) {
     if (isGame(s.name)) {
       games[s.name] = (games[s.name] || '') + s.code;
+    } else if (isSecondaryPage(s.name)) {
+      secondary += s.code + '\n';
     } else {
       main += s.code + '\n';
     }
@@ -100,7 +121,14 @@ async function buildJs() {
   const minified = await minifyJs(banner('app') + main, 'app');
   fs.writeFileSync(path.join(ROOT, 'script.min.js'), minified);
 
+  // Emit the secondary-pages chunk (loaded on first navigation away from home).
   const sizes = { main: { raw: main.length, min: minified.length } };
+  if (secondary) {
+    fs.writeFileSync(path.join(ROOT, 'js', 'pages-secondary.js'), secondary.trim() + '\n');
+    const secMin = await minifyJs(banner('pages-secondary') + secondary, 'pages-secondary');
+    fs.writeFileSync(path.join(ROOT, 'js', 'pages-secondary.min.js'), secMin);
+    sizes['js/pages-secondary.js'] = { raw: secondary.length, min: secMin.length };
+  }
   for (const [modName, code] of Object.entries(games)) {
     const base = path.basename(modName, '.js'); // e.g. sudoku
     fs.writeFileSync(path.join(gamesDir, base + '.js'), code.trim() + '\n');

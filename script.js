@@ -9177,29 +9177,45 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
     });
   }
 
+  // Lazy-load secondary content pages on first navigation. These pages share
+  // appendSiteFooter and only use window-exported globals, so they load safely
+  // as a separate chunk — keeping the render-critical main bundle lean.
+  const SECONDARY_SRC = 'js/pages-secondary.min.js';
+  let secondaryLoaded = false;
+  function ensureSecondary() {
+    if (secondaryLoaded) return Promise.resolve();
+    const perf = window.Perf;
+    if (perf && perf.loadScript) {
+      return perf.loadScript(SECONDARY_SRC).then(() => { secondaryLoaded = true; });
+    }
+    secondaryLoaded = true;
+    return Promise.resolve();
+  }
+  function lazyPage(globalName) {
+    return async function (params) {
+      await ensureSecondary();
+      const Page = window[globalName];
+      if (Page && typeof Page.render === 'function') return Page.render(params);
+    };
+  }
+
   function registerRoutes() {
     const Router = need('Router');
-    need('HomePage');
-    need('ProfilePage');
-    need('AboutPage');
-    need('HowToPage');
-    need('GamePage');
-    need('LeaderboardPage');
-    need('CommunityPage');
-    need('BlogPage');
-    need('PrivacyPage');
-    need('ContactPage');
+    need('HomePage');   // home: first paint
+    need('ProfilePage'); // common first nav (header avatar)
+    need('GamePage');   // game cards
+    // Secondary content pages load on demand:
     Router.register('/', window.HomePage.render);
     Router.register('/profile', window.ProfilePage.render);
-    Router.register('/about', window.AboutPage.render);
-    Router.register('/how-to-play', window.HowToPage.render);
     Router.register('/game/:id', window.GamePage.render);
-    Router.register('/leaderboard', window.LeaderboardPage.render);
-    Router.register('/community', window.CommunityPage.render);
-    Router.register('/blog', window.BlogPage.render);
-    Router.register('/blog/:id', window.BlogPage.render);
-    Router.register('/privacy-policy', window.PrivacyPage.render);
-    Router.register('/contact', window.ContactPage.render);
+    Router.register('/about', lazyPage('AboutPage'));
+    Router.register('/how-to-play', lazyPage('HowToPage'));
+    Router.register('/leaderboard', lazyPage('LeaderboardPage'));
+    Router.register('/community', lazyPage('CommunityPage'));
+    Router.register('/blog', lazyPage('BlogPage'));
+    Router.register('/blog/:id', lazyPage('BlogPage'));
+    Router.register('/privacy-policy', lazyPage('PrivacyPage'));
+    Router.register('/contact', lazyPage('ContactPage'));
   }
 
   function registerSW() {
