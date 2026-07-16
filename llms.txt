@@ -1,0 +1,54 @@
+# PuzzleHub
+
+> PuzzleHub is a free, privacy-first Progressive Web App that hosts nine classic
+> brain-training puzzle games. No downloads, no sign-up, no ads in the way of
+> play — every game runs instantly in the browser and works offline once visited.
+
+- Site: https://puzzle-hub.netlify.app/
+- Language: English (UI is i18n-ready with 30+ locale packs)
+- Type: Single-page application (vanilla JS, zero framework, zero build runtime)
+- License: All games are free to play
+
+## Games
+
+Each game is a self-contained, on-demand-loaded module with multiple
+difficulties, hints, undo/redo, timers, autosave, keyboard + touch controls,
+and a daily seeded challenge shared by everyone.
+
+1. Sudoku — https://puzzle-hub.netlify.app/#/game/sudoku
+2. Crossword — https://puzzle-hub.netlify.app/#/game/crossword
+3. Word Search — https://puzzle-hub.netlify.app/#/game/wordsearch
+4. Cryptogram — https://puzzle-hub.netlify.app/#/game/cryptogram
+5. Kakuro — https://puzzle-hub.netlify.app/#/game/kakuro
+6. Nonogram — https://puzzle-hub.netlify.app/#/game/nonogram
+7. 2048 — https://puzzle-hub.netlify.app/#/game/2048
+8. Minesweeper — https://puzzle-hub.netlify.app/#/game/minesweeper
+9. Memory — https://puzzle-hub.netlify.app/#/game/memory
+
+## How to play
+
+Beginner-friendly rules for every game: https://puzzle-hub.netlify.app/#/how-to-play
+
+## Key pages
+
+- Home / all games: https://puzzle-hub.netlify.app/#/
+- How to play guides: https://puzzle-hub.netlify.app/#/how-to-play
+- Blog & strategy guides: https://puzzle-hub.netlify.app/#/blog
+- About: https://puzzle-hub.netlify.app/#/about
+- Profile & stats: https://puzzle-hub.netlify.app/#/profile
+- Leaderboards: https://puzzle-hub.netlify.app/#/leaderboard
+- Community / puzzle editor: https://puzzle-hub.netlify.app/#/community
+- Privacy Policy: https://puzzle-hub.netlify.app/#/privacy-policy
+- Contact: https://puzzle-hub.netlify.app/#/contact
+
+## Notes for AI agents and crawlers
+
+- Routing is hash-based (`#/route`). Each route still updates the document
+  `<title>`, meta description, canonical URL, Open Graph tags, and emits
+  JSON-LD (BreadcrumbList) for SEO and AI readability.
+- The static HTML at `/` contains a fully indexable, no-JavaScript fallback
+  listing every game, so the catalog is crawlable without executing scripts.
+- Structured data (WebApplication, WebSite, Organization, ItemList, FAQPage) is
+  embedded in the HTML `<head>` as JSON-LD.
+- Sitemap: https://puzzle-hub.netlify.app/sitemap.xml
+- Robots: https://puzzle-hub.netlify.app/robots.txt
