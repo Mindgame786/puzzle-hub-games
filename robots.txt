@@ -1,0 +1,22 @@
+# PuzzleHub Robots.txt
+# https://puzzle-hub.netlify.app/
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemaps
+Sitemap: https://puzzle-hub.netlify.app/sitemap.xml
+
+# Crawl-delay for polite bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+User-agent: DotBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Crawl-delay: 10
