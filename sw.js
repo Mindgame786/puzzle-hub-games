@@ -5,7 +5,7 @@
  */
 
 // PWA Cache Configuration
-const CACHE_NAME = 'puzzlehub-v2';
+const CACHE_NAME = 'puzzlehub-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -73,10 +73,32 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => cachedResponse);
+        .catch(() => {
+          // Network failed - return cached or navigate fallback
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return cachedResponse;
+        });
 
       // Return instant cached response if available, otherwise wait for network
-      return cachedResponse || fetchPromise;
+      // With navigate fallback for SPA offline support
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetchPromise.then((response) => {
+        if (response) return response;
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+        return cachedResponse || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      });
     })
   );
 });
