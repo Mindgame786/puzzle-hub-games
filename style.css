@@ -499,7 +499,7 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   width: 100%;
-  text-align: left;
+  text-align: center;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-2xl);
@@ -4608,7 +4608,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   width: 100% !important;
-  text-align: left !important;
+  text-align: center !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: 22px !important;
   background: var(--bg-elevated) !important;
@@ -5364,3 +5364,63 @@ button, input, select, .pill, .app-nav__link, .game-card, .menu-toggle {
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
 }
+
+/* Perfect Centering Alignment for Game Cards, Hub Widgets & Featured Banners */
+.game-card,
+.game-card__body,
+.hub-widget,
+.featured-card,
+.daily-banner {
+  text-align: center !important;
+}
+
+.game-card__body {
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.game-card__title,
+.game-card__desc {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+.game-card__meta {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.hub-widget {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.hub-widget__title,
+.hub-widget__value,
+.hub-widget__sub {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+.hub-widget .btn,
+.hub-widget a.btn {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  align-self: center !important;
+}
+
+.featured-card {
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.featured-card__kicker,
+.featured-card__title,
+.featured-card__desc {
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
