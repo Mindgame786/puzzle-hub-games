@@ -43,7 +43,7 @@
 
   --text-primary: #0f0f11;
   --text-secondary: #55555f;
-  --text-tertiary: #8a8a95;
+  --text-tertiary: #6c6c77;
   --text-inverse: #fdfcfb;
   --text-brand: var(--brand-700);
 
@@ -68,7 +68,7 @@
   --cell-correct: rgba(14, 159, 110, 0.11);
   --cell-fixed: #0f0f11;
   --cell-user: var(--brand-700);
-  --cell-note: #75757f;
+  --cell-note: #696974;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: "Space Grotesk", var(--font-sans);
@@ -153,8 +153,8 @@
   --bg-glass: rgba(18, 18, 21, 0.8);
 
   --text-primary: #f2f1ef;
-  --text-secondary: #a4a3ad;
-  --text-tertiary: #6c6b75;
+  --text-secondary: #b6b5bf;
+  --text-tertiary: #9a99a4;
   --text-inverse: #0a0a0c;
   --text-brand: var(--brand-400);
 
@@ -1728,7 +1728,7 @@ ins.adsbygoogle:empty {
   border: 1px solid rgba(255,255,255,0.06);
   box-shadow: var(--shadow-md);
 }
-.season-banner h3 { color: #fff; font-size: var(--text-lg); margin-bottom: 2px; }
+.season-banner h2 { color: #fff; font-size: var(--text-lg); margin-bottom: 2px; }
 .season-banner p { color: rgba(255,255,255,0.85); font-size: 13px; margin: 0; }
 
 /* Responsive */
@@ -3152,7 +3152,7 @@ ins.adsbygoogle:empty {
   color: #fff;
   margin-bottom: var(--space-6);
 }
-.season-banner h3 { color: #fff; font-size: var(--text-lg); margin-bottom: 2px; }
+.season-banner h2 { color: #fff; font-size: var(--text-lg); margin-bottom: 2px; }
 .season-banner p { color: rgba(255,255,255,.85); font-size: var(--text-sm); margin: 0; }
 
 /* Theme swatches */

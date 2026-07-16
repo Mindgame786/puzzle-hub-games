@@ -1,0 +1,8 @@
+# Dependencies (regenerated on Netlify via "npm install && node build.js")
+node_modules/
+
+# Local tooling caches
+.cache/
+npm-debug.log*
+yarn-error.log*
+.DS_Store

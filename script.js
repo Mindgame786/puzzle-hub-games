@@ -1332,7 +1332,16 @@ const I18n = (() => {
     return Object.keys(dicts);
   }
 
-  return { t, register, setLocale, getLocale, onChange, init, available };
+  // Entry point for the lazy-loaded locale chunk (js/i18n-locales.min.js).
+  // The 30 non-English dictionaries are NOT in the main bundle to cut
+  // render-critical parse/execute time; they register here on demand.
+  function _registerLocales(extra) {
+    for (const [loc, data] of Object.entries(extra)) {
+      dicts[loc] = Object.assign({}, dicts.en, data);
+    }
+  }
+
+  return { t, register, setLocale, getLocale, onChange, init, available, _registerLocales };
 })();
 if (typeof window !== 'undefined') { window.I18n = I18n; if (window.PH) window.PH.I18n = I18n; }
 
@@ -1910,15 +1919,15 @@ const GameRegistry = (() => {
   const loading = new Map();
 
   const BUILTIN = [
-    ['sudoku', { src: 'js/games/sudoku.js', cls: 'SudokuGame' }],
-    ['minesweeper', { src: 'js/games/minesweeper.js', cls: 'MinesweeperGame' }],
-    ['2048', { src: 'js/games/game2048.js', cls: 'Game2048' }],
-    ['memory', { src: 'js/games/memory.js', cls: 'MemoryGame' }],
-    ['wordsearch', { src: 'js/games/wordsearch.js', cls: 'WordSearchGame' }],
-    ['cryptogram', { src: 'js/games/cryptogram.js', cls: 'CryptogramGame' }],
-    ['crossword', { src: 'js/games/crossword.js', cls: 'CrosswordGame' }],
-    ['kakuro', { src: 'js/games/kakuro.js', cls: 'KakuroGame' }],
-    ['nonogram', { src: 'js/games/nonogram.js', cls: 'NonogramGame' }],
+    ['sudoku', { src: 'js/games/sudoku.min.js', cls: 'SudokuGame' }],
+    ['minesweeper', { src: 'js/games/minesweeper.min.js', cls: 'MinesweeperGame' }],
+    ['2048', { src: 'js/games/game2048.min.js', cls: 'Game2048' }],
+    ['memory', { src: 'js/games/memory.min.js', cls: 'MemoryGame' }],
+    ['wordsearch', { src: 'js/games/wordsearch.min.js', cls: 'WordSearchGame' }],
+    ['cryptogram', { src: 'js/games/cryptogram.min.js', cls: 'CryptogramGame' }],
+    ['crossword', { src: 'js/games/crossword.min.js', cls: 'CrosswordGame' }],
+    ['kakuro', { src: 'js/games/kakuro.min.js', cls: 'KakuroGame' }],
+    ['nonogram', { src: 'js/games/nonogram.min.js', cls: 'NonogramGame' }],
   ];
 
   function initBuiltins() {
@@ -6992,7 +7001,7 @@ const HomePage = (() => {
         container.appendChild(Utils.el('div', { className: 'season-banner' }, [
           Utils.el('div', { style: 'font-size:2rem', textContent: '🎊' }),
           Utils.el('div', { style: 'flex:1' }, [
-            Utils.el('h3', { textContent: season.name }),
+            Utils.el('h2', { textContent: season.name }),
             Utils.el('p', { textContent: season.bonus }),
           ]),
           Utils.el('a', { className: 'btn btn-secondary btn-sm', href: '#/leaderboard', textContent: 'Rankings' }),
@@ -7220,13 +7229,12 @@ const HomePage = (() => {
     adContainer.appendChild(adIns);
     container.appendChild(adContainer);
     
-    // Initialize Google AdSense
-    setTimeout(() => {
+    // Initialize Google AdSense (silently — no console noise)
+    setTimeout(function () {
       try {
-        (adsbygoogle = window.adsbygoogle || []).push({});
-        console.log('Google AdSense initialized in Advertisement section');
-      } catch (err) {
-        console.warn('AdSense initialization failed:', err);
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adsbygoogle.push({});
+      } catch (_err) {
         adContainer.style.display = 'none';
       }
     }, 1500);
@@ -7768,6 +7776,9 @@ const ProfilePage = (() => {
         tabindex: '0',
         'aria-label': 'Change avatar',
         onClick: () => changeAvatar(),
+        onKeyDown: (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); changeAvatar(); }
+        },
         style: 'cursor:pointer',
       }),
       Utils.el('div', { className: 'profile-info' }, [
@@ -7778,6 +7789,9 @@ const ProfilePage = (() => {
           style: 'cursor:pointer',
           'aria-label': 'Edit name',
           onClick: () => editName(),
+          onKeyDown: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editName(); }
+          },
         }),
         Utils.el('p', {
           textContent: `Member since ${new Date(profile.createdAt || Date.now()).toLocaleDateString()}`,
@@ -8496,7 +8510,7 @@ const CommunityPage = (() => {
       let difficulty = 'medium';
       let friend = 'Friend';
 
-      form.appendChild(Utils.el('h3', { textContent: 'New friend challenge', style: 'margin-bottom:12px' }));
+      form.appendChild(Utils.el('h2', { textContent: 'New friend challenge', style: 'margin-bottom:12px;font-size:1.5rem' }));
       const nameInput = Utils.el('input', {
         type: 'text',
         placeholder: 'Friend name',
@@ -9153,7 +9167,6 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
 
     app.appendChild(Utils.el('main', {
       id: 'main-content',
-      role: 'main',
       tabindex: '-1',
     }));
 
@@ -9173,29 +9186,45 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
     });
   }
 
+  // Lazy-load secondary content pages on first navigation. These pages share
+  // appendSiteFooter and only use window-exported globals, so they load safely
+  // as a separate chunk — keeping the render-critical main bundle lean.
+  const SECONDARY_SRC = 'js/pages-secondary.min.js';
+  let secondaryLoaded = false;
+  function ensureSecondary() {
+    if (secondaryLoaded) return Promise.resolve();
+    const perf = window.Perf;
+    if (perf && perf.loadScript) {
+      return perf.loadScript(SECONDARY_SRC).then(() => { secondaryLoaded = true; });
+    }
+    secondaryLoaded = true;
+    return Promise.resolve();
+  }
+  function lazyPage(globalName) {
+    return async function (params) {
+      await ensureSecondary();
+      const Page = window[globalName];
+      if (Page && typeof Page.render === 'function') return Page.render(params);
+    };
+  }
+
   function registerRoutes() {
     const Router = need('Router');
-    need('HomePage');
-    need('ProfilePage');
-    need('AboutPage');
-    need('HowToPage');
-    need('GamePage');
-    need('LeaderboardPage');
-    need('CommunityPage');
-    need('BlogPage');
-    need('PrivacyPage');
-    need('ContactPage');
+    need('HomePage');   // home: first paint
+    need('ProfilePage'); // common first nav (header avatar)
+    need('GamePage');   // game cards
+    // Secondary content pages load on demand:
     Router.register('/', window.HomePage.render);
     Router.register('/profile', window.ProfilePage.render);
-    Router.register('/about', window.AboutPage.render);
-    Router.register('/how-to-play', window.HowToPage.render);
     Router.register('/game/:id', window.GamePage.render);
-    Router.register('/leaderboard', window.LeaderboardPage.render);
-    Router.register('/community', window.CommunityPage.render);
-    Router.register('/blog', window.BlogPage.render);
-    Router.register('/blog/:id', window.BlogPage.render);
-    Router.register('/privacy-policy', window.PrivacyPage.render);
-    Router.register('/contact', window.ContactPage.render);
+    Router.register('/about', lazyPage('AboutPage'));
+    Router.register('/how-to-play', lazyPage('HowToPage'));
+    Router.register('/leaderboard', lazyPage('LeaderboardPage'));
+    Router.register('/community', lazyPage('CommunityPage'));
+    Router.register('/blog', lazyPage('BlogPage'));
+    Router.register('/blog/:id', lazyPage('BlogPage'));
+    Router.register('/privacy-policy', lazyPage('PrivacyPage'));
+    Router.register('/contact', lazyPage('ContactPage'));
   }
 
   function registerSW() {
@@ -9285,6 +9314,25 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
         }, prefetchMs);
       }
 
+      // Lazy-load non-English locales on idle (keeps 30 language packs off
+      // the critical parse/execute path; they register via _registerLocales).
+      if (window.Perf && window.Perf.idle) {
+        window.Perf.idle(function () {
+          if (window.Perf && window.Perf.loadScript) {
+            window.Perf.loadScript("js/i18n-locales.min.js").then(function () {
+              var s = window.Storage.getSettings();
+              var saved = s.locale;
+              var browser = (navigator.language || "en").slice(0, 2);
+              var target = saved || browser;
+              if (target && target !== "en" && target !== window.I18n.getLocale()) {
+                window.I18n.setLocale(target);
+                if (window.Router && window.Router.resolve) window.Router.resolve();
+              }
+            }).catch(function () {});
+          }
+        }, (prefetchMs || 3500) + 500);
+      }
+
       if (window.Perf && window.Perf.mark) {
         window.Perf.mark('init_end');
         window.Perf.measure('bootstrap', 'init_start');
@@ -9326,12 +9374,9 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
         Logger.info('app_ready', {
           version: (window.Config && Config.get('version')) || (window.PH && PH.version),
         });
-      } else {
-        console.log('%cPuzzleHub ready', 'font-size:13px;font-weight:700;color:#4527d6;letter-spacing:-0.02em');
       }
     } catch (err) {
       if (window.ErrorBoundary) ErrorBoundary.showFatal(err);
-      else console.error(err);
     }
   }
 
@@ -9381,12 +9426,11 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
     adContainer.style.display = 'block';
     adContainer.classList.add('ad-loaded');
 
-    // Push the ad
+    // Push the ad (silently — avoids console errors when ad blockers are present)
     try {
-      (adsbygoogle = window.adsbygoogle || []).push({});
-      console.log('AdSense ad initialized');
-    } catch (err) {
-      console.warn('AdSense initialization failed:', err);
+      window.adsbygoogle = window.adsbygoogle || [];
+      window.adsbygoogle.push({});
+    } catch (_err) {
       // Hide container if ad fails to load
       adContainer.classList.remove('ad-loaded');
       adContainer.style.display = 'none';

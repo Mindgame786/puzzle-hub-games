@@ -1,0 +1,35 @@
+{
+  "name": "puzzle-hub-games",
+  "version": "1.0.0",
+  "description": "PuzzleHub — 9 free puzzle games (Sudoku, Crossword, Word Search, 2048, Memory, Kakuro, Nonogram, Cryptogram, Minesweeper). PWA + offline.",
+  "main": "index.html",
+  "scripts": {
+    "build": "node build.js",
+    "test": "node test-logic.js && node web-audit.js",
+    "perf": "node perf-test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mindgame786/puzzle-hub-games.git"
+  },
+  "keywords": [
+    "puzzle",
+    "sudoku",
+    "crossword",
+    "2048",
+    "minesweeper",
+    "games",
+    "pwa"
+  ],
+  "author": "PuzzleHub",
+  "license": "MIT",
+  "homepage": "https://puzzle-hub.netlify.app/",
+  "dependencies": {
+    "clean-css": "^5.3.3",
+    "terser": "^5.49.0"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "sharp": "^0.35.3"
+  }
+}
