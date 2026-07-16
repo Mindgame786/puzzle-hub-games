@@ -25,12 +25,16 @@
 /*.html
   Cache-Control: public, max-age=3600
 
-# Robots and sitemap - short cache
+# Robots, sitemap and llms - short cache
 /robots.txt
   Cache-Control: public, max-age=86400
 
 /sitemap.xml
   Cache-Control: public, max-age=86400
+
+/llms.txt
+  Cache-Control: public, max-age=86400
+  Content-Type: text/plain; charset=UTF-8
 
 # ads.txt - short cache (Google recommends daily refresh)
 /ads.txt
