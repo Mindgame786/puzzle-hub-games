@@ -5,13 +5,14 @@
  */
 
 // PWA Cache Configuration
-const CACHE_NAME = 'puzzlehub-v1';
+const CACHE_NAME = 'puzzlehub-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/script.js',
   '/manifest.json',
+  '/llms.txt',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap'
@@ -42,7 +43,6 @@ self.addEventListener('activate', (event) => {
   );
   self.clients.claim();
 });
-
 // Fetch event - Stale-While-Revalidate strategy for ultra-fast instant loads (<5ms)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
