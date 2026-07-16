@@ -5317,3 +5317,50 @@ h1, .hero__title, .elite-state__title, .content-hero h1 {
   align-items: center !important;
   justify-content: center !important;
 }
+
+/* ============================================================
+   PuzzleHub Pro-Level Mobile Responsiveness & Google Mobile-First SEO
+   ============================================================ */
+
+/* Mobile Fluid Layouts & Prevent Any Side Scroll */
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* High Mobile Tap Target Compliance (WCAG AAA >= 44px) */
+button, input, select, .pill, .app-nav__link, .game-card, .menu-toggle {
+  touch-action: manipulation;
+  min-height: 44px;
+}
+
+/* Small Device Screen Auto-Scaling (<380px) */
+@media (max-width: 380px) {
+  .sudoku-board, .board-wrap, .game-stage {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .sudoku-cell {
+    font-size: clamp(0.95rem, 4.2vw, 1.25rem) !important;
+  }
+  .num-pad button, .game-numpad button {
+    min-height: 42px !important;
+    padding: 0 !important;
+  }
+  .game-toolbar {
+    gap: 4px !important;
+    padding: 6px 0 !important;
+  }
+  .hero__title {
+    font-size: clamp(1.85rem, 7vw, 2.5rem) !important;
+  }
+}
+
+/* Hardware GPU Acceleration for 60fps Mobile Performance */
+.game-card, .modal, .toast, .daily-banner, .featured-card, .btn {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+}
