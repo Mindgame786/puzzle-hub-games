@@ -5510,4 +5510,41 @@ html, body {
   }
 }
 
+/* ============================================================
+   Hardware GPU Acceleration & Blazing Fast 60fps Optimization
+   ============================================================ */
+
+/* Offscreen Content Visibility rendering optimization */
+.games-grid,
+.home-seo,
+.blog-grid,
+.app-footer,
+.content-page {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 450px;
+}
+
+/* GPU Hardware Compositing & Motion Acceleration */
+.game-card,
+.featured-card,
+.hub-widget,
+.btn,
+.modal,
+.toast,
+.tile-2048,
+.ms-cell,
+.sudoku-cell,
+.crossword-cell {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+/* Smooth Scrolling & Instant Focus Transitions */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+
 

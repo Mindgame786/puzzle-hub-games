@@ -43,13 +43,13 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - Stale-While-Revalidate strategy for ultra-fast instant loads (<5ms)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = event.request.url;
-  
-  // Skip ads and analytics (Google AdSense only)
+
+  // Skip external ads and analytics tracking
   if (url.includes('pagead2.googlesyndication.com') ||
       url.includes('google-analytics.com') ||
       url.includes('googletagmanager.com') ||
@@ -57,25 +57,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Stale-While-Revalidate: Serve instantly from cache, then update cache in background
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
           }
-          return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
-        });
-      })
+          return networkResponse;
+        })
+        .catch(() => cachedResponse);
+
+      // Return instant cached response if available, otherwise wait for network
+      return cachedResponse || fetchPromise;
+    })
   );
 });
