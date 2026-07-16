@@ -2,44 +2,162 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="theme-color" content="#f3f2ef" media="(prefers-color-scheme: light)"/>
 <meta name="theme-color" content="#0a0a0c" media="(prefers-color-scheme: dark)"/>
 <meta name="color-scheme" content="light dark"/>
-<meta name="description" content="Play free Sudoku, Crossword, Word Search, 2048, Memory and 6 more puzzle games online. No downloads, no signup — instant play with daily challenges and stats."/>
-<meta name="robots" content="index, follow"/>
+<meta name="description" content="Play 9 free online puzzle games: Sudoku, Crossword, Word Search, 2048, Memory, Kakuro, Nonogram, Cryptogram & Minesweeper. Instant play, no download or signup required."/>
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"/>
 <meta name="google-site-verification" content="21nIcjcAuFAmPlQs4GINRChdduD2ZvDtXTM4Ug_H5hc"/>
-<meta name="keywords" content="free online sudoku, crossword puzzle, word search game, 2048 game, memory game, brain games, puzzle games online"/>
+<meta name="keywords" content="free online sudoku, crossword puzzle, word search game, 2048 game, memory game, brain games, puzzle games online, kakuro, nonogram, cryptogram, minesweeper"/>
 <meta name="author" content="PuzzleHub"/>
+<meta name="application-name" content="PuzzleHub"/>
+
+<!-- Mobile & iOS PWA Meta Tags -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="PuzzleHub"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="format-detection" content="telephone=no"/>
+
 <title>PuzzleHub — Free Online Sudoku, Crossword &amp; Puzzle Games</title>
 
+<!-- Icons & Canonical Links -->
 <link rel="manifest" href="manifest.json"/>
 <link rel="icon" href="favicon.ico" type="image/x-icon"/>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"/>
 <link rel="apple-touch-icon" href="assets/icons/icon-192.png"/>
 <link rel="canonical" href="https://puzzle-hub.netlify.app/"/>
+
+<!-- Open Graph / Facebook -->
 <meta property="og:title" content="PuzzleHub — Free Online Sudoku, Crossword &amp; Puzzle Games"/>
-<meta property="og:description" content="9 free puzzle games in one place — Sudoku, Crossword, Word Search, 2048, Memory and more. Play instantly, no signup required."/>
+<meta property="og:description" content="9 free puzzle games in one place — Sudoku, Crossword, Word Search, 2048, Memory, Kakuro, Nonogram, Cryptogram and Minesweeper. Play instantly on any device."/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="PuzzleHub"/>
 <meta property="og:url" content="https://puzzle-hub.netlify.app/"/>
 <meta property="og:image" content="https://puzzle-hub.netlify.app/assets/icons/icon-512.png"/>
+<meta property="og:image:width" content="512"/>
+<meta property="og:image:height" content="512"/>
 <meta property="og:locale" content="en_US"/>
+
+<!-- Twitter Cards -->
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:title" content="PuzzleHub — Free Online Sudoku, Crossword &amp; Puzzle Games"/>
-<meta name="twitter:description" content="9 free puzzle games in one place — play instantly, no signup required."/>
+<meta name="twitter:description" content="9 free puzzle games in one place — Sudoku, Crossword, Word Search, 2048, Memory & more. Play instantly, no signup required."/>
 <meta name="twitter:image" content="https://puzzle-hub.netlify.app/assets/icons/icon-512.png"/>
 <meta name="twitter:site" content="@PuzzleHub"/>
+
+<!-- Performance Optimizations -->
+<link rel="dns-prefetch" href="https://fonts.googleapis.com"/>
+<link rel="dns-prefetch" href="https://fonts.gstatic.com"/>
+<link rel="dns-prefetch" href="https://pagead2.googlesyndication.com"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"PuzzleHub","description":"Free online puzzle platform featuring Sudoku, Crossword, Word Search, 2048, Memory, Kakuro, Nonogram, Cryptogram and Minesweeper.","applicationCategory":"GameApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+
+<!-- Structured Data (JSON-LD for SEO) -->
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "PuzzleHub",
+    "url": "https://puzzle-hub.netlify.app/",
+    "description": "Free online puzzle gaming platform featuring Sudoku, Crossword, Word Search, 2048, Memory, Kakuro, Nonogram, Cryptogram and Minesweeper.",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any",
+    "browserRequirements": "Requires JavaScript and HTML5",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "PuzzleHub",
+    "url": "https://puzzle-hub.netlify.app/"
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Puzzle Games Collection",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Sudoku" },
+      { "@type": "ListItem", "position": 2, "name": "Crossword" },
+      { "@type": "ListItem", "position": 3, "name": "Word Search" },
+      { "@type": "ListItem", "position": 4, "name": "Cryptogram" },
+      { "@type": "ListItem", "position": 5, "name": "Kakuro" },
+      { "@type": "ListItem", "position": 6, "name": "Nonogram" },
+      { "@type": "ListItem", "position": 7, "name": "2048" },
+      { "@type": "ListItem", "position": 8, "name": "Minesweeper" },
+      { "@type": "ListItem", "position": 9, "name": "Memory" }
+    ]
+  }
+]
+</script>
+
+<!-- Google AdSense Script -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5809071932668146" crossorigin="anonymous"></script>
-<script>window.PH_CONFIG=window.PH_CONFIG||{env:'production'};(function(){try{var s=JSON.parse(localStorage.getItem('ph_settings')||'{}');var t=s.theme||'system';if(t==='system')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);var r=JSON.parse(localStorage.getItem('ph_rewards')||'{}');if(r.activeTheme)document.documentElement.setAttribute('data-accent',r.activeTheme);}catch(e){}})();</script>
-<link rel="stylesheet" href="style.css">
+
+<!-- Theme Initializer -->
+<script>
+window.PH_CONFIG = window.PH_CONFIG || { env: 'production' };
+(function() {
+  try {
+    var s = JSON.parse(localStorage.getItem('ph_settings') || '{}');
+    var t = s.theme || 'system';
+    if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    var r = JSON.parse(localStorage.getItem('ph_rewards') || '{}');
+    if (r.activeTheme) document.documentElement.setAttribute('data-accent', r.activeTheme);
+  } catch(e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-<div id="app"><div class="boot-screen" role="status" aria-label="Loading PuzzleHub"><div class="boot-screen__mark brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7.2 4h5.1c2.55 0 4.4 1.7 4.4 4.05S14.85 12.1 12.3 12.1H7.2V4z" fill="#fff" fill-opacity=".96"/><path d="M7.2 12.9h5.8c2.55 0 4.4 1.65 4.4 4.05S15.55 21 13 21H7.2v-8.1z" fill="#fff" fill-opacity=".82"/><circle cx="17.6" cy="8.05" r="1.65" fill="#fff" fill-opacity=".96"/><circle cx="18.35" cy="16.95" r="1.65" fill="#fff" fill-opacity=".82"/></svg></div><div class="boot-screen__title">PuzzleHub</div><div class="boot-screen__bar"><div class="boot-screen__fill"></div></div></div></div>
+
+<!-- Accessible & SEO Indexable Fallback Content -->
+<noscript>
+  <div style="padding: 20px; font-family: sans-serif; max-width: 800px; margin: 0 auto; line-height: 1.6;">
+    <h1>PuzzleHub — Free Online Sudoku, Crossword &amp; Brain Games</h1>
+    <p>Welcome to <strong>PuzzleHub</strong>, your destination for free online brain games and logic puzzles. Play instantly in your browser with no registration required.</p>
+    <h2>Included Puzzle Games:</h2>
+    <ul>
+      <li><strong>Sudoku</strong> — Classic 9x9 logic grid with daily challenges.</li>
+      <li><strong>Crossword</strong> — Interactive word puzzles with clues.</li>
+      <li><strong>Word Search</strong> — Find hidden words in letter grids.</li>
+      <li><strong>Cryptogram</strong> — Decode cipher puzzles letter by letter.</li>
+      <li><strong>Kakuro</strong> — Cross-sum mathematical puzzle logic.</li>
+      <li><strong>Nonogram</strong> — Picross picture logic puzzles.</li>
+      <li><strong>2048</strong> — Combine numbered tiles to reach 2048.</li>
+      <li><strong>Minesweeper</strong> — Clear minefields without detonating explosives.</li>
+      <li><strong>Memory Game</strong> — Test and sharpen your visual memory.</li>
+    </ul>
+    <p>Please enable JavaScript in your browser settings to play games interactively.</p>
+  </div>
+</noscript>
+
+<!-- Application Shell Mount Target -->
+<div id="app">
+  <div class="boot-screen" role="status" aria-label="Loading PuzzleHub">
+    <div class="boot-screen__mark brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7.2 4h5.1c2.55 0 4.4 1.7 4.4 4.05S14.85 12.1 12.3 12.1H7.2V4z" fill="#fff" fill-opacity=".96"/>
+        <path d="M7.2 12.9h5.8c2.55 0 4.4 1.65 4.4 4.05S15.55 21 13 21H7.2v-8.1z" fill="#fff" fill-opacity=".82"/>
+        <circle cx="17.6" cy="8.05" r="1.65" fill="#fff" fill-opacity=".96"/>
+        <circle cx="18.35" cy="16.95" r="1.65" fill="#fff" fill-opacity=".82"/>
+      </svg>
+    </div>
+    <div class="boot-screen__title">PuzzleHub</div>
+    <div class="boot-screen__bar">
+      <div class="boot-screen__fill"></div>
+    </div>
+  </div>
+</div>
 
 <script src="script.js" defer></script>
 </body>
