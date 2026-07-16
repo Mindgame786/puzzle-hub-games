@@ -5,7 +5,7 @@
  */
 
 // PWA Cache Configuration
-const CACHE_NAME = 'puzzlehub-v2';
+const CACHE_NAME = 'puzzlehub-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -14,8 +14,10 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/llms.txt',
   '/assets/icons/icon-192.png',
+  '/assets/icons/icon-192.webp',
   '/assets/icons/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap'
+  '/assets/icons/icon-512.webp',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500;700&display=swap'
 ];
 
 // Install event - cache static assets

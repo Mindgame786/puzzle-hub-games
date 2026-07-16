@@ -24,14 +24,21 @@
 <title>PuzzleHub — Free Online Sudoku, Crossword &amp; Puzzle Games</title>
 
 <!-- High-Priority Resource Preloads for Blazing Fast Instant Load -->
-<link rel="preload" href="style.css" as="style"/>
-<link rel="preload" href="script.js" as="script"/>
+<link rel="preload" href="style.css" as="style" onload="this.onload=null;this.rel='stylesheet'" fetchpriority="high"/>
+<link rel="preload" href="script.js" as="script" fetchpriority="low"/>
+<link rel="preload" href="assets/icons/icon-512.webp" as="image" type="image/webp" fetchpriority="high" imagesrcset="assets/icons/icon-192.webp 192w, assets/icons/icon-512.webp 512w" imagesizes="(max-width: 600px) 192px, 512px"/>
+<link rel="preload" href="assets/icons/icon-512.png" as="image" type="image/png" fetchpriority="high"/>
 
 <!-- Icons & Canonical Links -->
 <link rel="manifest" href="manifest.json"/>
-<link rel="icon" href="favicon.ico" type="image/x-icon"/>
+<link rel="icon" href="favicon.ico" type="image/x-icon" sizes="48x48"/>
+<link rel="icon" type="image/webp" sizes="192x192" href="assets/icons/icon-192.webp"/>
+<link rel="icon" type="image/webp" sizes="512x512" href="assets/icons/icon-512.webp"/>
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="assets/icons/icon-512.png"/>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"/>
-<link rel="apple-touch-icon" href="assets/icons/icon-192.png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="assets/icons/icon-192.png" type="image/png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="assets/icons/icon-192.webp" type="image/webp"/>
 <link rel="canonical" href="https://puzzle-hub.netlify.app/"/>
 
 <!-- Open Graph / Facebook -->
@@ -58,10 +65,10 @@
 <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<!-- Non-Render-Blocking Google Fonts Loading -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+<!-- Non-Render-Blocking Google Fonts Loading - Optimized weights: Inter 400,600,700,800 + Space Grotesk 700 + JetBrains Mono 500,700 -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
 <noscript>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
 </noscript>
 
 <!-- Critical Boot Shell CSS (Instant First Paint in <10ms) -->
@@ -177,7 +184,7 @@ window.PH_CONFIG = window.PH_CONFIG || { env: 'production' };
 })();
 </script>
 
-<link rel="stylesheet" href="style.css"/>
+<noscript><link rel="stylesheet" href="style.css"/></noscript>
 </head>
 <body>
 
@@ -202,8 +209,8 @@ window.PH_CONFIG = window.PH_CONFIG || { env: 'production' };
   </div>
 </noscript>
 
-<!-- Application Shell Mount Target -->
-<div id="app">
+<!-- Application Shell Mount Target - Semantic HTML5 main element -->
+<main id="app" role="main">
   <div class="boot-screen" role="status" aria-label="Loading PuzzleHub">
     <div class="boot-screen__mark brand-mark" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none">
@@ -218,7 +225,7 @@ window.PH_CONFIG = window.PH_CONFIG || { env: 'production' };
       <div class="boot-screen__fill"></div>
     </div>
   </div>
-</div>
+</main>
 
 <script src="script.js" defer></script>
 </body>
