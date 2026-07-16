@@ -8,10 +8,6 @@ Disallow: /api/
 # Sitemaps
 Sitemap: https://puzzle-hub.netlify.app/sitemap.xml
 
-# LLM-friendly overview for AI crawlers (OpenAI, Anthropic, Perplexity, etc.)
-# See https://llmstxt.org/
-# llms.txt: https://puzzle-hub.netlify.app/llms.txt
-
 # Crawl-delay for polite bots
 User-agent: AhrefsBot
 Crawl-delay: 10

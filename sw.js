@@ -5,16 +5,13 @@
  */
 
 // PWA Cache Configuration
-const CACHE_NAME = 'puzzlehub-v3';
+const CACHE_NAME = 'puzzlehub-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/script.js',
   '/manifest.json',
-  '/llms.txt',
-  '/robots.txt',
-  '/sitemap.xml',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap'
@@ -73,32 +70,10 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => {
-          // Network failed - return cached or navigate fallback
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return cachedResponse;
-        });
+        .catch(() => cachedResponse);
 
       // Return instant cached response if available, otherwise wait for network
-      // With navigate fallback for SPA offline support
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      return fetchPromise.then((response) => {
-        if (response) return response;
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
-      }).catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-        return cachedResponse || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
-      });
+      return cachedResponse || fetchPromise;
     })
   );
 });
