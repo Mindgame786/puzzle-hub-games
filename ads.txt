@@ -1,0 +1,7 @@
+# ads.txt for PuzzleHub
+# https://puzzle-hub.netlify.app/
+# Authorized Digital Sellers - IAB Tech Lab Standard
+# This file declares who is authorized to sell advertising on this site.
+
+# Google AdSense
+google.com, pub-5809071932668146, DIRECT, f08c47fec0942fa0
