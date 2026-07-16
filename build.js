@@ -59,11 +59,11 @@ function isGame(name) {
   return name.startsWith('js/games/');
 }
 
-// Content pages that are never part of the first paint (home). They share
-// appendSiteFooter and use only window-exported globals, so they load safely
-// as a separate chunk on first navigation. Keeping them out of the main bundle
-// cuts the render-critical JS payload on mobile.
-const SECONDARY_PAGES = new Set([
+// Content pages + feature modules that are never part of the first paint
+// (home). They share appendSiteFooter and use only window-exported globals,
+// so they load safely as a separate chunk on first navigation. Keeping them
+// out of the main bundle cuts the render-critical JS payload on mobile.
+const SECONDARY_CHUNK = new Set([
   'js/pages/about.js',
   'js/pages/howto.js',
   'js/pages/leaderboard.js',
@@ -71,10 +71,44 @@ const SECONDARY_PAGES = new Set([
   'js/pages/blog.js',
   'js/pages/privacy.js',
   'js/pages/contact.js',
+  // PuzzleEditor is only referenced by the (lazy) community page.
+  'js/features/editor.js',
 ]);
 
 function isSecondaryPage(name) {
-  return SECONDARY_PAGES.has(name);
+  return SECONDARY_CHUNK.has(name);
+}
+
+/**
+ * Extract every non-English `dicts.XX = ...` definition from the i18n source
+ * and transform them into a standalone chunk that calls
+ * `window.I18n._registerLocales({ XX: {...}, ... })`.
+ */
+function extractI18nLocales(code) {
+  const locales = {};
+  const re = /^  dicts\.(\w+) = ([\s\S]*?);\n/gm;
+  let m;
+  while ((m = re.exec(code)) !== null) {
+    const locale = m[1];
+    if (locale === 'en') continue;
+    let body = m[2].trim();
+    const assignMatch = body.match(/^Object\.assign\(\{\},\s*dicts\.en,\s*(\{[\s\S]*\})\)$/);
+    if (assignMatch) body = assignMatch[1];
+    locales[locale] = body;
+  }
+  const trimmed = code.replace(re, '');
+  if (Object.keys(locales).length === 0) return { trimmed, locales: '' };
+  const entries = Object.entries(locales).map(function (e) { return '  ' + e[0] + ': ' + e[1]; }).join(',\n');
+  const localesSrc =
+    '/* PuzzleHub i18n locales (lazy-loaded) */\n' +
+    '(function () {\n' +
+    '  if (window.I18n && window.I18n._registerLocales) {\n' +
+    '    window.I18n._registerLocales({\n' +
+    entries + '\n' +
+    '    });\n' +
+    '  }\n' +
+    '})();\n';
+  return { trimmed, locales: localesSrc };
 }
 
 function banner(label) {
@@ -98,7 +132,19 @@ async function minifyJs(code, label) {
 
 async function buildJs() {
   const src = readSrc('script.js');
-  const sections = splitModules(src);
+  let sections = splitModules(src);
+
+  // ---- Extract non-English i18n dictionaries into a lazy chunk ----
+  // The i18n module ships 31 language packs but only the runtime locale is
+  // used at first paint. We strip every `dicts.XX = …` (except `en`) from the
+  // i18n section and emit them in a chunk that calls I18n._registerLocales().
+  let localesChunkCode = '';
+  sections = sections.map((s) => {
+    if (s.name !== 'js/core/i18n.js') return s;
+    const out = extractI18nLocales(s.code);
+    localesChunkCode = out.locales;
+    return { name: s.name, code: out.trimmed };
+  });
 
   let main = '';
   let secondary = '';
@@ -121,8 +167,17 @@ async function buildJs() {
   const minified = await minifyJs(banner('app') + main, 'app');
   fs.writeFileSync(path.join(ROOT, 'script.min.js'), minified);
 
-  // Emit the secondary-pages chunk (loaded on first navigation away from home).
   const sizes = { main: { raw: main.length, min: minified.length } };
+
+  // Emit the i18n locales chunk (loaded on demand for non-English locales).
+  if (localesChunkCode) {
+    fs.writeFileSync(path.join(ROOT, "js", "i18n-locales.js"), localesChunkCode);
+    const locMin = await minifyJs(banner("i18n-locales") + localesChunkCode, "i18n-locales");
+    fs.writeFileSync(path.join(ROOT, "js", "i18n-locales.min.js"), locMin);
+    sizes["js/i18n-locales.js"] = { raw: localesChunkCode.length, min: locMin.length };
+  }
+
+  // Emit the secondary-pages chunk (loaded on first navigation away from home).
   if (secondary) {
     fs.writeFileSync(path.join(ROOT, 'js', 'pages-secondary.js'), secondary.trim() + '\n');
     const secMin = await minifyJs(banner('pages-secondary') + secondary, 'pages-secondary');

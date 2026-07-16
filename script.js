@@ -1332,7 +1332,16 @@ const I18n = (() => {
     return Object.keys(dicts);
   }
 
-  return { t, register, setLocale, getLocale, onChange, init, available };
+  // Entry point for the lazy-loaded locale chunk (js/i18n-locales.min.js).
+  // The 30 non-English dictionaries are NOT in the main bundle to cut
+  // render-critical parse/execute time; they register here on demand.
+  function _registerLocales(extra) {
+    for (const [loc, data] of Object.entries(extra)) {
+      dicts[loc] = Object.assign({}, dicts.en, data);
+    }
+  }
+
+  return { t, register, setLocale, getLocale, onChange, init, available, _registerLocales };
 })();
 if (typeof window !== 'undefined') { window.I18n = I18n; if (window.PH) window.PH.I18n = I18n; }
 
@@ -9303,6 +9312,25 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
         window.Perf.idle(function () {
           GameRegistry.prefetch(['sudoku', 'memory', '2048']);
         }, prefetchMs);
+      }
+
+      // Lazy-load non-English locales on idle (keeps 30 language packs off
+      // the critical parse/execute path; they register via _registerLocales).
+      if (window.Perf && window.Perf.idle) {
+        window.Perf.idle(function () {
+          if (window.Perf && window.Perf.loadScript) {
+            window.Perf.loadScript("js/i18n-locales.min.js").then(function () {
+              var s = window.Storage.getSettings();
+              var saved = s.locale;
+              var browser = (navigator.language || "en").slice(0, 2);
+              var target = saved || browser;
+              if (target && target !== "en" && target !== window.I18n.getLocale()) {
+                window.I18n.setLocale(target);
+                if (window.Router && window.Router.resolve) window.Router.resolve();
+              }
+            }).catch(function () {});
+          }
+        }, (prefetchMs || 3500) + 500);
       }
 
       if (window.Perf && window.Perf.mark) {

@@ -1,3 +1,107 @@
+/* ===== js/features/editor.js ===== */
+/**
+ * PuzzleHub — User Puzzle Editor (Sudoku-focused + generic export)
+ * Users create puzzles, validate, publish to community feed.
+ */
+const PuzzleEditor = (() => {
+  function emptySudoku() {
+    return Array.from({ length: 9 }, () => Array(9).fill(0));
+  }
+
+  function isValidPlacement(grid, r, c, n) {
+    if (n === 0) return true;
+    for (let i = 0; i < 9; i++) {
+      if (i !== c && grid[r][i] === n) return false;
+      if (i !== r && grid[i][c] === n) return false;
+    }
+    const br = Math.floor(r / 3) * 3;
+    const bc = Math.floor(c / 3) * 3;
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++) {
+        const rr = br + i, cc = bc + j;
+        if ((rr !== r || cc !== c) && grid[rr][cc] === n) return false;
+      }
+    return true;
+  }
+
+  function countClues(grid) {
+    return grid.flat().filter((x) => x > 0).length;
+  }
+
+  function solveCount(grid, limit = 2) {
+    const g = grid.map((r) => r.slice());
+    let count = 0;
+    function solve() {
+      if (count >= limit) return;
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (g[r][c] === 0) {
+            for (let n = 1; n <= 9; n++) {
+              if (isValidPlacement(g, r, c, n)) {
+                g[r][c] = n;
+                solve();
+                g[r][c] = 0;
+              }
+            }
+            return;
+          }
+        }
+      }
+      count++;
+    }
+    solve();
+    return count;
+  }
+
+  function validateSudoku(grid) {
+    for (let r = 0; r < 9; r++)
+      for (let c = 0; c < 9; c++)
+        if (grid[r][c] && !isValidPlacement(grid, r, c, grid[r][c])) {
+          return { ok: false, error: `Conflict at row ${r + 1}, col ${c + 1}` };
+        }
+    const clues = countClues(grid);
+    if (clues < 17) return { ok: false, error: 'Need at least 17 clues for a proper Sudoku.' };
+    const solutions = solveCount(grid, 2);
+    if (solutions === 0) return { ok: false, error: 'No solution — check your clues.' };
+    if (solutions > 1) return { ok: false, error: 'Multiple solutions — add more clues.' };
+    return { ok: true, clues, difficulty: clues >= 36 ? 'easy' : clues >= 28 ? 'medium' : clues >= 24 ? 'hard' : 'expert' };
+  }
+
+  function publishSudoku(grid, title) {
+    const v = validateSudoku(grid);
+    if (!v.ok) {
+      Toast.show({ type: 'error', message: v.error });
+      return null;
+    }
+    const spec = {
+      gameId: 'sudoku',
+      type: 'user',
+      title: (title || 'Community Sudoku').slice(0, 40),
+      difficulty: v.difficulty,
+      puzzle: grid.map((r) => r.slice()),
+      seed: Utils.hashStr(JSON.stringify(grid)),
+    };
+    return Social.publishCommunityPuzzle(spec);
+  }
+
+  function draft() {
+    return Storage.get('editor_draft', { gameId: 'sudoku', grid: emptySudoku(), title: '' });
+  }
+
+  function saveDraft(d) {
+    Storage.set('editor_draft', d);
+  }
+
+  return {
+    emptySudoku, isValidPlacement, validateSudoku, publishSudoku, draft, saveDraft, countClues,
+  };
+})();
+
+if (typeof window !== 'undefined') { window.PuzzleEditor = PuzzleEditor; if (window.PH) window.PH.PuzzleEditor = PuzzleEditor; }
+
+
+
+
 /* ===== js/pages/about.js ===== */
 /**
  * PuzzleHub — About page (SEO content + trust)
