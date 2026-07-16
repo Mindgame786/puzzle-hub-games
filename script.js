@@ -4804,7 +4804,7 @@ class MinesweeperGame extends GameBase {
         });
         cell.addEventListener('touchmove', () => {
           if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-        });
+        }, { passive: true });
 
         this.boardEl.appendChild(cell);
       }
