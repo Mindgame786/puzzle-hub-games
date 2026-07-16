@@ -499,7 +499,7 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   width: 100%;
-  text-align: left;
+  text-align: center;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-2xl);
@@ -4608,7 +4608,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   width: 100% !important;
-  text-align: left !important;
+  text-align: center !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: 22px !important;
   background: var(--bg-elevated) !important;
@@ -5364,3 +5364,187 @@ button, input, select, .pill, .app-nav__link, .game-card, .menu-toggle {
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
 }
+
+/* Perfect Centering Alignment for Game Cards, Hub Widgets & Featured Banners */
+.game-card,
+.game-card__body,
+.hub-widget,
+.featured-card,
+.daily-banner {
+  text-align: center !important;
+}
+
+.game-card__body {
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.game-card__title,
+.game-card__desc {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+.game-card__meta {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.hub-widget {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.hub-widget__title,
+.hub-widget__value,
+.hub-widget__sub {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+.hub-widget .btn,
+.hub-widget a.btn {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  align-self: center !important;
+}
+
+.featured-card {
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.featured-card__kicker,
+.featured-card__title,
+.featured-card__desc {
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* ============================================================
+   Complete Responsive Fluid Layout System (Mobile / Tablet / Desktop)
+   ============================================================ */
+
+/* 1. Universal Container & Horizontal Scroll Protection */
+html, body {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+}
+
+.container {
+  width: 100% !important;
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding-left: clamp(12px, 4vw, 24px) !important;
+  padding-right: clamp(12px, 4vw, 24px) !important;
+}
+
+.board-wrap, .game-stage-wrap, .game-stage, .sudoku-board-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* 2. Large Desktops (>1025px) */
+@media (min-width: 1025px) {
+  .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 24px !important;
+  }
+  .featured-strip, .hub-widgets {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 20px !important;
+  }
+}
+
+/* 3. Tablets & Small Laptops (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
+    gap: 18px !important;
+  }
+  .featured-strip, .hub-widgets {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+/* 4. Mobile Devices (361px - 640px) */
+@media (max-width: 640px) {
+  .featured-strip, .hub-widgets {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .game-toolbar {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+  .modal__content {
+    width: calc(100vw - 24px) !important;
+    max-width: 100% !important;
+    padding: 20px 16px !important;
+    margin: 12px !important;
+  }
+}
+
+/* 5. Compact Mobile Phones (<= 360px) */
+@media (max-width: 360px) {
+  .games-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+  .game-card__art {
+    height: 110px !important;
+  }
+  .game-card__icon {
+    font-size: 2.4rem !important;
+  }
+  .sudoku-cell, .ms-cell, .nonogram-cell, .kakuro-cell {
+    font-size: clamp(0.85rem, 4vw, 1.1rem) !important;
+  }
+}
+
+/* ============================================================
+   Hardware GPU Acceleration & Blazing Fast 60fps Optimization
+   ============================================================ */
+
+/* Offscreen Content Visibility rendering optimization */
+.games-grid,
+.home-seo,
+.blog-grid,
+.app-footer,
+.content-page {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 450px;
+}
+
+/* GPU Hardware Compositing & Motion Acceleration */
+.game-card,
+.featured-card,
+.hub-widget,
+.btn,
+.modal,
+.toast,
+.tile-2048,
+.ms-cell,
+.sudoku-cell,
+.crossword-cell {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+/* Smooth Scrolling & Instant Focus Transitions */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+
