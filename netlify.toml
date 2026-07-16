@@ -1,6 +1,6 @@
 [build]
   publish = "."
-  command = "npm ci && node build.js"
+  command = "npm ci --omit=dev && node build.js"
 
 # SPA fallback: every route serves the app shell (hash-router handles views).
 [[redirects]]
