@@ -12,17 +12,22 @@
 
 | Asset | Before (source) | After (production) | Δ |
 |------|------------------|--------------------|---|
-| Main JS bundle | `script.js` **325 KB** (all 9 games inlined, un-minified) | `script.min.js` **160 KB** minified; 9 games split into lazy chunks (~57 KB total) | **−165 KB on the home page** + games no longer block first paint |
-| CSS | `style.css` **149 KB** (render-blocking, un-minified) | `style.min.css` **101 KB**, **non-render-blocking** | −48 KB + unblocks first paint |
-| Game modules | bundled (loaded eagerly) | `js/games/*.min.js` (loaded on demand) | eliminates the **214–215 KB "unused JS"** |
+| Main JS bundle | `script.js` **325 KB** (all 9 games inlined, un-minified, ~95 KB gz) | `script.min.js` **160 KB** (~47.6 KB **gz**) minified; 9 games split into lazy chunks | **render-critical JS −48 KB gz** |
+| Critical CSS | 0 (full sheet render-blocking) | **15 KB inlined** in `<head>` (header + nav + hero + buttons + tokens) | LCP element paints with zero stylesheet wait |
+| Full CSS | `style.css` **149 KB** render-blocking | `style.min.css` **99 KB** (~18.9 KB gz), **non-render-blocking async** | unblocks first paint |
+| Game modules | bundled (loaded eagerly) | `js/games/*.min.js` (loaded on demand, ~2–3 KB gz each) | eliminates the **214–215 KB "unused JS"** |
 | Fonts | render-blocking `<link>` | `preload` + async swap, `font-display:swap`, preconnect | unblocks first paint |
 | Images | PNG only | + **WebP** + **AVIF** variants | −45 % bytes (AVIF) |
-| FCP (est.) | 2.6 s | **< 0.6 s** (inlined boot CSS + async everything) | blocked paint removed |
-| LCP (est.) | 4.6 s | **< 2.5 s** (½-size minified main bundle + async CSS/fonts) | ~½ the JS to parse |
+| FCP (est.) | 2.6 s | **< 0.6 s** (inlined critical CSS + deferred JS) | blocked paint removed |
+| LCP (est.) | 4.6 s | **< 2.0 s** (hero styled by inlined CSS, no FOUC, ½-size JS) | ~½ the JS to parse |
 
-A build pipeline (`build.js`) code-splits + minifies; a jsdom runtime smoke test
-(`node test-build.js`) boots the app, lazy-loads all 9 games, renders the home
-page (9 cards + footer), and mounts a live Sudoku board — **30/30 checks pass**.
+A build pipeline (`build.js`) code-splits, minifies, **and auto-extracts + inlines
+critical CSS**; a jsdom runtime smoke test (`node test-build.js`) boots the app,
+lazy-loads all 9 games, renders the home page (9 cards + footer), and mounts a
+live Sudoku board — **30/30 checks pass, 0 console errors**. A separate FOUC
+test renders the home shell with **only the inlined critical CSS** (async
+stylesheet stripped) and confirms the hero's gradient-text clip applies — so the
+LCP element is styled without waiting for the stylesheet.
 
 ---
 
@@ -69,32 +74,18 @@ Rebuild on Netlify: `netlify.toml` → `command = "npm ci && node build.js"`.
 
 ### 2 · Eliminate render-blocking resources (was 1790 ms mobile / 470 ms desktop)
 - **Problem / Reason:** `<link rel="stylesheet" href="style.css">` and the Google
-  Fonts `<link>` were render-blocking, so the browser couldn't paint the inlined
-  boot screen (instant FCP) until ~149 KB of CSS downloaded.
-- **Fix:** load both CSS and fonts with the `preload → onload swap` async
-  pattern; JS already `defer`. The boot-screen CSS stays inlined so first paint
-  is instant; the full stylesheet applies by the time the SPA renders the shell.
-- **Affected file:** `index.html`.
-- **Old code:**
-  ```html
-  <link rel="preload" href="style.css" as="style"/>
-  <link rel="preload" href="script.js" as="script"/>
-  …
-  <link href="…fonts…&display=swap" rel="stylesheet"/>
-  …
-  <link rel="stylesheet" href="style.css"/>
-  ```
-- **New code:**
-  ```html
-  <link rel="preload" href="style.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
-  <noscript><link rel="stylesheet" href="style.min.css"/></noscript>
-  <link rel="preload" href="script.min.js" as="script"/>
-  …
-  <link rel="preload" href="…fonts…&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
-  <noscript><link rel="stylesheet" href="…fonts…&display=swap"/></noscript>
-  ```
-- **Verification:** no `rel="stylesheet"` remains in `<head>`; served site
-  returns 200 for all assets; boot screen paints before CSS arrives.
+  Fonts `<link>` were render-blocking, so the browser couldn't paint until
+  ~149 KB of CSS downloaded.
+- **Fix:** (a) **inline 15 KB of critical CSS** — the app shell (header, nav,
+  hero, buttons) + all design tokens — extracted by a property-level cascade
+  merge so values are identical to the full sheet; (b) load the full stylesheet
+  + fonts with the `preload → onload swap` async pattern. The inlined critical
+  CSS means the LCP hero paints **without waiting for the stylesheet at all**.
+- **Affected files:** `index.html`, `build.js` (`extractCriticalCss` +
+  `inlineCriticalIntoHtml`).
+- **Verification:** a FOUC test strips the async stylesheet and confirms the
+  hero's `-webkit-text-fill-color: rgba(0,0,0,0)` (gradient clip active); 0
+  console errors; all assets return 200.
 
 ### 3 · Improve LCP (4.6 s → target < 2.5 s)
 - **Problem / Reason:** the LCP element is the hero headline ("Puzzle your

@@ -137,6 +137,126 @@ async function buildCss() {
 }
 
 // ---------------------------------------------------------------------------
+// 3. Critical CSS extraction + inlining into index.html
+// ---------------------------------------------------------------------------
+
+const CRITICAL_SELECTORS = [
+  ':root', '[data-theme="dark"]',
+  'html', 'body', '[data-theme="dark"] body',
+  '*, *::before, *::after',
+  'a', 'a:hover', 'h1, h2, h3, h4, h5, h6', 'p', 'button',
+  ':focus-visible', '::selection',
+  '#app', '#main-content',
+  '.container',
+  '.app-header', '.app-header__inner',
+  '.app-logo', '.app-logo:hover', '.app-logo__mark', '.app-logo__mark svg',
+  '.app-logo__text', '.app-logo__name', '.app-logo__tag',
+  '.app-nav', '.app-nav__link', '.app-nav__link:hover', '.app-nav__link.active',
+  '.app-header__actions',
+  '.app-header__actions .btn-icon', '.app-header__actions .btn-icon svg',
+  '.user-chip', '.user-chip__avatar',
+  '.btn', '.btn:disabled', '.btn-primary', '.btn-primary:hover:not(:disabled)',
+  '.btn-secondary', '.btn-ghost', '.btn-lg', '.btn-icon', '.btn-icon.sm',
+  '.brand-mark', '.brand-mark svg', '.brand-wordmark',
+  '.hero', '.hero__badge', '.hero__title', '.hero__subtitle', '.hero__actions',
+  '.skip-link', '.skip-link:focus',
+  '.sr-only',
+];
+
+function extractCriticalCss(src) {
+  // Parse top-level simple rules (skip nested at-rules); merge per selector at
+  // the property level (last value wins, !important precedence) — identical to
+  // the browser's cascade for same-specificity rules.
+  const text = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [];
+  let i = 0;
+  while (i < text.length) {
+    while (i < text.length && /\s/.test(text[i])) i++;
+    if (i >= text.length) break;
+    if (text[i] === '@') {
+      let j = i;
+      while (j < text.length && text[j] !== '{' && text[j] !== ';') j++;
+      if (text[j] === ';') { i = j + 1; continue; }
+      let depth = 0, k = j;
+      do { if (text[k] === '{') depth++; else if (text[k] === '}') depth--; k++; } while (k < text.length && depth > 0);
+      i = k;
+      continue;
+    }
+    const selStart = i;
+    while (i < text.length && text[i] !== '{') i++;
+    if (i >= text.length) break;
+    const selector = text.slice(selStart, i).trim();
+    const bodyStart = i + 1;
+    let depth = 1, k = bodyStart;
+    while (k < text.length && depth > 0) {
+      if (text[k] === '{') depth++;
+      else if (text[k] === '}') depth--;
+      k++;
+    }
+    const body = text.slice(bodyStart, k - 1).trim();
+    i = k;
+    if (selector && body) rules.push({ selector, body });
+  }
+
+  let order = 0;
+  const merged = new Map();
+  for (const r of rules) {
+    if (!merged.has(r.selector)) merged.set(r.selector, new Map());
+    const map = merged.get(r.selector);
+    for (const decl of r.body.split(';')) {
+      const d = decl.trim();
+      if (!d) continue;
+      const colon = d.indexOf(':');
+      if (colon < 0) continue;
+      const prop = d.slice(0, colon).trim();
+      let value = d.slice(colon + 1).trim();
+      const important = /!important\s*$/.test(value);
+      if (important) value = value.replace(/!important\s*$/, '').trim();
+      map.set(prop, { value, important, order: order++ });
+    }
+  }
+
+  const parts = [];
+  for (const sel of CRITICAL_SELECTORS) {
+    const map = merged.get(sel);
+    if (!map || !map.size) continue;
+    const entries = [...map.entries()].sort((a, b) => a[1].order - b[1].order);
+    const decls = entries
+      .map(([prop, v]) => `${prop}:${v.value}${v.important ? ' !important' : ''}`)
+      .join(';');
+    parts.push(`${sel}{${decls}}`);
+  }
+  const raw = parts.join('\n');
+  const min = new CleanCSS({ level: { 1: { all: true }, 2: false } }).minify(raw).styles;
+  fs.writeFileSync(path.join(ROOT, 'critical.min.css'), min);
+  return min;
+}
+
+const BOOT_SCREEN_CSS =
+  '.boot-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:18px}' +
+  '[data-theme=dark] .boot-screen{background-color:#0a0a0c;color:#f2f1ef}' +
+  '.boot-screen__mark{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(165deg,#4db3ff,#5b3df0 42%,#0062b8);box-shadow:0 16px 44px rgba(54,32,171,.28),inset 0 1px 0 rgba(255,255,255,.32)}' +
+  '.boot-screen__mark svg{width:28px;height:28px;display:block}' +
+  '.boot-screen__title{font-weight:780;font-size:1.15rem;letter-spacing:-0.045em}' +
+  '.boot-screen__bar{width:104px;height:2px;background:rgba(15,15,17,.07);border-radius:99px;overflow:hidden}' +
+  '[data-theme=dark] .boot-screen__bar{background:rgba(255,255,255,.07)}' +
+  '.boot-screen__fill{width:32%;height:100%;background:linear-gradient(90deg,#4db3ff,#4527d6);border-radius:99px;animation:boot 1.1s cubic-bezier(.16,1,.3,1) infinite alternate}' +
+  '@keyframes boot{from{transform:translateX(-140%)}to{transform:translateX(300%)}}';
+
+function inlineCriticalIntoHtml(criticalMin) {
+  const htmlPath = path.join(ROOT, 'index.html');
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  // Replace whatever currently sits between the critical-CSS comment and </style>.
+  const re = /<!-- Critical CSS[\s\S]*?-->\s*<style>[\s\S]*?<\/style>/;
+  const replacement =
+    '<!-- Critical CSS (inlined): renders the app shell + boot screen instantly, no FOUC while the async stylesheet loads -->\n' +
+    '<style>\n' + criticalMin + '\n' + BOOT_SCREEN_CSS + '\n</style>';
+  if (!re.test(html)) throw new Error('critical <style> block not found in index.html');
+  html = html.replace(re, replacement);
+  fs.writeFileSync(htmlPath, html);
+}
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
@@ -145,6 +265,9 @@ async function buildCss() {
   const jsSizes = await buildJs();
   console.log('• Minifying CSS…');
   const cssSizes = await buildCss();
+  console.log('• Extracting + inlining critical CSS…');
+  const criticalMin = extractCriticalCss(readSrc('style.css'));
+  inlineCriticalIntoHtml(criticalMin);
 
   console.log('\n================ Build summary ================');
   let jsRawTotal = 0, jsMinTotal = 0;
@@ -159,6 +282,9 @@ async function buildCss() {
   );
   console.log(
     `  ${'style.css'.padEnd(28)} ${(cssSizes.raw / 1024).toFixed(1).padStart(7)} KB  ->  ${(cssSizes.min / 1024).toFixed(1).padStart(6)} KB`
+  );
+  console.log(
+    `  ${'critical.min.css (inlined)'.padEnd(28)} ${(criticalMin.length / 1024).toFixed(1).padStart(7)} KB`
   );
   console.log('==============================================');
 })().catch((err) => {
