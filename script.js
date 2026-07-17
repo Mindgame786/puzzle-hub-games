@@ -1576,6 +1576,10 @@ const Router = (() => {
   async function resolve() {
     const { path, handler, params } = parse();
 
+    // Load game/secondary-page CSS only when leaving the home view, so the
+    // initial paint never downloads unused CSS.
+    if (path && path !== '/' && window.ensureDeferredCss) window.ensureDeferredCss();
+
     // Cleanup previous page
     if (typeof currentCleanup === 'function') {
       try {
@@ -1847,7 +1851,10 @@ const Perf = (() => {
 
   /** Load a script once; resolves when executed */
   function loadScript(src) {
-    if (loaded.has(src)) return Promise.resolve();
+    // The cache-busting ?v= query is NOT part of the resource identity, so two
+    // URLs that differ only by version must be treated as the same script.
+    const key = String(src).split('?')[0];
+    if (loaded.has(key)) return Promise.resolve();
     return new Promise((resolve, reject) => {
       const existing = document.querySelector(`script[data-src="${src}"]`);
       if (existing) {
@@ -1859,7 +1866,7 @@ const Perf = (() => {
       s.src = src;
       s.async = true;
       s.dataset.src = src;
-      s.onload = () => { loaded.add(src); resolve(); };
+      s.onload = () => { loaded.add(key); resolve(); };
       s.onerror = reject;
       document.body.appendChild(s);
     });
@@ -6912,13 +6919,27 @@ if (typeof window !== 'undefined') { window.NonogramGame = NonogramGame; }
 const HomePage = (() => {
   function render() {
     const main = document.getElementById('main-content');
-    main.innerHTML = '';
     SEO.apply('/');
 
-    const page = Utils.el('div', { className: 'page-enter' });
-    const container = Utils.el('div', { className: 'container' });
+    // Hydrate a prerendered hero (emitted by the build) instead of wiping it.
+    // Keeping the hero element stable lets the early paint remain the LCP and
+    // avoids layout shift. On subsequent navigations we do a full re-render.
+    const preHero = main.querySelector('.hero');
+    const isPre = !!preHero && !main.dataset.hydrated;
+    let container;
+    let page = null;
+    if (isPre) {
+      container = preHero.closest('.container') || main;
+      main.dataset.hydrated = '1';
+    } else {
+      main.innerHTML = '';
+      page = Utils.el('div', { className: 'page-enter' });
+      container = Utils.el('div', { className: 'container' });
+      main.appendChild(page);
+    }
 
     // Hero
+    if (!isPre) {
     const hero = Utils.el('section', { className: 'hero', 'aria-labelledby': 'hero-title' }, [
       Utils.el('div', { className: 'hero__badge' }, [
         Utils.el('span', { 'aria-hidden': 'true', textContent: '✨' }),
@@ -6945,6 +6966,7 @@ const HomePage = (() => {
       ]),
     ]);
     container.appendChild(hero);
+    }
 
     // Daily banner
     const dailyDone = Storage.getDailyProgress()[Utils.dateKey()]?.completed;
@@ -7239,8 +7261,9 @@ const HomePage = (() => {
       }
     }, 1500);
 
-    page.appendChild(container);
-    main.appendChild(page);
+    if (page) {
+      page.appendChild(container);
+    }
     renderFooter(main);
   }
 
@@ -8963,6 +8986,19 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
 
     const app = document.getElementById('app');
     if (!app) throw new Error('#app element not found');
+
+    // Keep a prerendered #main-content (hero) around while we rebuild the rest
+    // of the shell. HomePage.render() hydrates this exact node instead of
+    // wiping it, so the largest contentful paint stays stable — the single
+    // biggest LCP win. Fallback: if there is no prerendered hero we build the
+    // main element from scratch as before.
+    let preservedMain = null;
+    const existingMain = app.querySelector('#main-content');
+    if (existingMain && existingMain.querySelector('.hero')) {
+      preservedMain = existingMain;
+      preservedMain.remove();
+    }
+
     app.innerHTML = '';
 
     app.appendChild(Utils.el('a', {
@@ -9165,10 +9201,14 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
     header.appendChild(inner);
     app.appendChild(header);
 
-    app.appendChild(Utils.el('main', {
-      id: 'main-content',
-      tabindex: '-1',
-    }));
+    if (preservedMain) {
+      app.appendChild(preservedMain);
+    } else {
+      app.appendChild(Utils.el('main', {
+        id: 'main-content',
+        tabindex: '-1',
+      }));
+    }
 
     app.appendChild(Utils.el('div', {
       id: 'toast-container',
@@ -9279,16 +9319,26 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
 
     window.I18n.init();
     window.Theme.init();
-    window.AudioEngine.init();
     if (typeof Config === 'undefined' || Config.isFeature('analytics')) {
       window.Analytics.init();
     }
     if (window.Cloud) window.Cloud.loadSession();
+
+    // Defer the heavier, purely user-triggered platform services off the
+    // critical boot path so they don't extend the main-thread block that
+    // delays first paint / LCP. They initialize on idle (or via a macrotask
+    // where requestIdleCallback is unavailable), well before any interaction
+    // needs them (sound, cloud sync, voice input).
+    var deferService = function (fn) {
+      if ('requestIdleCallback' in window) window.requestIdleCallback(fn, { timeout: 2000 });
+      else setTimeout(fn, 0);
+    };
+    if (window.AudioEngine) deferService(function () { window.AudioEngine.init(); });
     if (window.Sync && (typeof Config === 'undefined' || Config.isFeature('offlineSync'))) {
-      window.Sync.init();
+      deferService(function () { window.Sync.init(); });
     }
     if (window.Voice && (typeof Config === 'undefined' || Config.isFeature('voice'))) {
-      window.Voice.init();
+      deferService(function () { window.Voice.init(); });
     }
     if (window.Rewards) window.Rewards.applyActive();
   }
@@ -9383,10 +9433,37 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
   // Prefer bootstrap.js as entry; keep app.js as thin alias for bundle order
   window.PHBootstrap = { init: init, buildShell: buildShell };
 
+  // Deferred stylesheet (game + secondary-page CSS) — loaded on first
+  // navigation away from home so the initial home view never downloads CSS
+  // it doesn't use. The URL (with content hash) is baked in by build.js.
+  window.PH_DEFERRED_CSS = 'style-deferred.min.css';
+  function ensureDeferredCss() {
+    if (window.__ph_deferred_loaded) return;
+    window.__ph_deferred_loaded = true;
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = window.PH_DEFERRED_CSS || 'style-deferred.min.css';
+    document.head.appendChild(l);
+  }
+  window.ensureDeferredCss = ensureDeferredCss;
+
+  // Boot AFTER the browser has painted the prerendered shell. The inline
+  // critical CSS + prerendered hero let the largest contentful paint happen
+  // immediately; running init synchronously on DOMContentLoaded would block
+  // that paint and push LCP out to the (much later) JS-rendered hero. A double
+  // requestAnimationFrame guarantees a paint before hydration; the setTimeout
+  // fallback covers environments without rAF (e.g. jsdom).
+  function scheduleInit() {
+    if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(function () { window.requestAnimationFrame(init); });
+    } else {
+      setTimeout(init, 0);
+    }
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', scheduleInit, { once: true });
   } else {
-    setTimeout(init, 0);
+    scheduleInit();
   }
 })();
 

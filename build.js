@@ -22,10 +22,19 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const terser = require('terser');
 const CleanCSS = require('clean-css');
 
 const ROOT = __dirname;
+
+/** Short, stable content hash used to version assets for cache-busting.
+ *  Strips the dated build banner so the hash changes ONLY when the actual
+ *  code/content changes (not on every redeploy date). */
+function assetHash(content) {
+  const stripped = String(content).replace(/^\/\*![^*]*\*\/\s*/, '');
+  return crypto.createHash('sha256').update(stripped).digest('hex').slice(0, 8);
+}
 
 // ---------------------------------------------------------------------------
 // 1. JavaScript split + minify
@@ -130,7 +139,7 @@ async function minifyJs(code, label) {
   return out.code;
 }
 
-async function buildJs() {
+async function buildJs(deferredCssVer) {
   const src = readSrc('script.js');
   let sections = splitModules(src);
 
@@ -164,15 +173,56 @@ async function buildJs() {
   const gamesDir = path.join(ROOT, 'js', 'games');
   fs.mkdirSync(gamesDir, { recursive: true });
 
+  // ---- Minify + hash the lazy chunks (content is independent of main) ----
+  // Each chunk gets its own short content hash so that changing ONLY a game
+  // module still busts that module's cache on redeploy.
+  const gameFiles = {}; // base -> minified source
+  const gameVers = {};  // base -> 8-char content hash
+  for (const [modName, code] of Object.entries(games)) {
+    const base = path.basename(modName, '.js'); // e.g. sudoku
+    const min = await minifyJs(banner(modName) + code, modName);
+    gameFiles[base] = min;
+    gameVers[base] = assetHash(min);
+  }
+
+  let secMin = '';
+  const SECONDARY_VER = secondary
+    ? assetHash((secMin = await minifyJs(banner('pages-secondary') + secondary, 'pages-secondary')))
+    : '';
+
+  let locMin = '';
+  const I18N_VER = localesChunkCode
+    ? assetHash((locMin = await minifyJs(banner('i18n-locales') + localesChunkCode, 'i18n-locales')))
+    : '';
+
+  // ---- Bake per-asset cache-busting versions into the lazy src references ----
+  // Netlify serves these assets with `immutable`, so a fixed filename can NOT
+  // bust the browser cache on redeploy. We append a content hash as a query
+  // string; the hash only changes when the file's content changes.
+  for (const [base, ver] of Object.entries(gameVers)) {
+    const needle = `js/games/${base}.min.js`;
+    main = main.split(needle).join(`${needle}?v=${ver}`);
+  }
+  if (SECONDARY_VER) {
+    main = main.split('js/pages-secondary.min.js').join(`js/pages-secondary.min.js?v=${SECONDARY_VER}`);
+  }
+  if (I18N_VER) {
+    main = main.split('js/i18n-locales.min.js').join(`js/i18n-locales.min.js?v=${I18N_VER}`);
+  }
+  if (deferredCssVer) {
+    main = main.split('style-deferred.min.css').join(`style-deferred.min.css?v=${deferredCssVer}`);
+  }
+
+  // ---- Minify main (versions now embedded) + hash for the HTML reference ----
   const minified = await minifyJs(banner('app') + main, 'app');
+  const MAIN_VER = assetHash(minified);
   fs.writeFileSync(path.join(ROOT, 'script.min.js'), minified);
 
-  const sizes = { main: { raw: main.length, min: minified.length } };
+  const sizes = { 'script.min.js': { raw: main.length, min: minified.length } };
 
   // Emit the i18n locales chunk (loaded on demand for non-English locales).
   if (localesChunkCode) {
     fs.writeFileSync(path.join(ROOT, "js", "i18n-locales.js"), localesChunkCode);
-    const locMin = await minifyJs(banner("i18n-locales") + localesChunkCode, "i18n-locales");
     fs.writeFileSync(path.join(ROOT, "js", "i18n-locales.min.js"), locMin);
     sizes["js/i18n-locales.js"] = { raw: localesChunkCode.length, min: locMin.length };
   }
@@ -180,43 +230,135 @@ async function buildJs() {
   // Emit the secondary-pages chunk (loaded on first navigation away from home).
   if (secondary) {
     fs.writeFileSync(path.join(ROOT, 'js', 'pages-secondary.js'), secondary.trim() + '\n');
-    const secMin = await minifyJs(banner('pages-secondary') + secondary, 'pages-secondary');
     fs.writeFileSync(path.join(ROOT, 'js', 'pages-secondary.min.js'), secMin);
     sizes['js/pages-secondary.js'] = { raw: secondary.length, min: secMin.length };
   }
-  for (const [modName, code] of Object.entries(games)) {
-    const base = path.basename(modName, '.js'); // e.g. sudoku
-    fs.writeFileSync(path.join(gamesDir, base + '.js'), code.trim() + '\n');
-    const min = await minifyJs(banner(modName) + code, modName);
+  for (const [base, min] of Object.entries(gameFiles)) {
+    fs.writeFileSync(path.join(gamesDir, base + '.js'), (games[`js/games/${base}.js`] || '').trim() + '\n');
     fs.writeFileSync(path.join(gamesDir, base + '.min.js'), min);
-    sizes[modName] = { raw: code.length, min: min.length };
+    sizes[`js/games/${base}.min.js`] = { raw: (games[`js/games/${base}.js`] || '').length, min: min.length };
   }
-  return sizes;
+  return { sizes, versions: { main: MAIN_VER } };
 }
 
 // ---------------------------------------------------------------------------
-// 2. CSS minify
+// 2. CSS minify  (with above-the-fold / deferred split)
 // ---------------------------------------------------------------------------
+
+// Classes that belong to game boards or secondary content pages. Rules that
+// target ONLY these are not needed for the initial home/shell paint, so they
+// are emitted into a separate deferred stylesheet loaded on navigation.
+const GAME_CSS_KW = /\.(sudoku|crossword|wordsearch|word-search|nonogram|kakuro|cryptogram|minesweeper|memory|2048|game2048|puzzle-board|puzzleboard)(-|\b|$)/;
+const PAGE_CSS_KW = /\.(about|blog|privacy|contact|community|leaderboard|profile|settings|how-to|howto|guide)(-|\b|$)/;
+function cssSelectorIsDeferrable(sel) {
+  return GAME_CSS_KW.test(sel) || PAGE_CSS_KW.test(sel);
+}
+
+// Split a stylesheet into "initial" (everything needed for first paint / home
+// / shell, plus any rule that mixes shared + deferred selectors) and
+// "deferred" (rules that target ONLY game/page classes). Media-query blocks
+// are kept whole: a @media is deferred only if ALL of its inner rules are
+// deferrable. This is intentionally conservative so shared components used on
+// the home view never lose styling.
+function splitCss(src) {
+  const text = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  let initial = '', deferred = '';
+  let i = 0; const n = text.length;
+  while (i < n) {
+    while (i < n && /\s/.test(text[i])) i++;
+    if (i >= n) break;
+    if (text[i] === '@') {
+      let j = i;
+      while (j < n && text[j] !== '{' && text[j] !== ';') j++;
+      if (text[j] === ';') { initial += text.slice(i, j + 1); i = j + 1; continue; }
+      let depth = 0, k = j;
+      do { if (text[k] === '{') depth++; else if (text[k] === '}') depth--; k++; } while (k < n && depth > 0);
+      const block = text.slice(i, k);
+      const inner = block.slice(block.indexOf('{') + 1, block.lastIndexOf('}'));
+      const sels = [];
+      inner.split('}').forEach((p) => { const ob = p.indexOf('{'); if (ob >= 0) sels.push(p.slice(0, ob)); });
+      const allDef = sels.length > 0 && sels.every((s) => s.split(',').every((x) => cssSelectorIsDeferrable(x.trim())));
+      if (allDef) deferred += block; else initial += block;
+      i = k; continue;
+    }
+    let j = i;
+    while (j < n && text[j] !== '{') j++;
+    if (j >= n) break;
+    const selPart = text.slice(i, j);
+    let depth = 0, k = j;
+    do { if (text[k] === '{') depth++; else if (text[k] === '}') depth--; k++; } while (k < n && depth > 0);
+    const rule = text.slice(i, k);
+    const sels = selPart.split(',').map((s) => s.trim());
+    const allDef = sels.length > 0 && sels.every((s) => cssSelectorIsDeferrable(s));
+    if (allDef) deferred += rule; else initial += rule;
+    i = k;
+  }
+  return { initial, deferred };
+}
 
 async function buildCss() {
   const src = readSrc('style.css');
-  const result = await new CleanCSS({
-    level: {
-      1: { all: true, specialComments: '1' },
-      2: { mergeMediaQueries: true, restructureRules: true },
-    },
-  }).minify(src);
+  const { initial, deferred } = splitCss(src);
+  const minifyOne = async (css, label) => {
+    const result = await new CleanCSS({
+      level: { 1: { all: true, specialComments: '1' }, 2: { mergeMediaQueries: true, restructureRules: true } },
+    }).minify(css);
+    if (result.errors && result.errors.length) throw new Error('clean-css errors: ' + result.errors.join('; '));
+    return '/*! PuzzleHub ' + label + ' — built ' + new Date().toISOString().slice(0, 10) + ' */\n' + result.styles;
+  };
+  const initialOut = await minifyOne(initial, 'styles');
+  const deferredOut = deferred && deferred.trim() ? await minifyOne(deferred, 'deferred styles') : '';
+  fs.writeFileSync(path.join(ROOT, 'style.min.css'), initialOut);
+  if (deferredOut) fs.writeFileSync(path.join(ROOT, 'style-deferred.min.css'), deferredOut);
+  return {
+    raw: src.length,
+    min: initialOut.length,
+    deferredMin: deferredOut.length,
+    hash: assetHash(initialOut),
+    deferredHash: deferredOut ? assetHash(deferredOut) : '',
+  };
+}
 
-  if (result.errors && result.errors.length) {
-    throw new Error('clean-css errors: ' + result.errors.join('; '));
-  }
-  const out =
-    '/*! PuzzleHub styles — built ' +
-    new Date().toISOString().slice(0, 10) +
-    ' */\n' +
-    result.styles;
-  fs.writeFileSync(path.join(ROOT, 'style.min.css'), out);
-  return { raw: src.length, min: out.length };
+/**
+ * Replace (or append) a content-hash version on every reference to `fileBase`
+ * inside `text`. Idempotent: works whether the URL is currently bare
+ * (`fileBase"`) or already versioned (`fileBase?v=abc123"`), so repeated
+ * rebuilds always land on the current hash. `quote` is the surrounding
+ * delimiter ('"' for HTML, "'" for the service worker list).
+ */
+function bumpVersion(text, fileBase, ver, quote) {
+  const escaped = fileBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(escaped + '(\\?v=[a-f0-9]{8})?' + quote, 'g');
+  return text.replace(re, `${fileBase}?v=${ver}${quote}`);
+}
+
+/**
+ * Append per-asset content-hash versions to the CSS/JS references in
+ * index.html. Combined with the `immutable` Netlify cache headers this
+ * guarantees returning visitors always receive updated assets after a redeploy
+ * (the URL changes only when the file content changes).
+ */
+function versionHtmlAssets(mainVer, cssVer) {
+  const htmlPath = path.join(ROOT, 'index.html');
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  html = bumpVersion(html, 'script.min.js', mainVer, '"');
+  html = bumpVersion(html, 'style.min.css', cssVer, '"');
+  fs.writeFileSync(htmlPath, html);
+}
+
+/**
+ * Inject the same per-asset versions into the service worker's precache list
+ * so the exact current shell assets are available offline (and we don't
+ * precache orphaned, unversioned URLs the app no longer requests).
+ */
+function versionServiceWorker(mainVer, cssVer, deferredCssVer) {
+  const swPath = path.join(ROOT, 'sw.js');
+  if (!fs.existsSync(swPath)) return;
+  let sw = fs.readFileSync(swPath, 'utf8');
+  sw = bumpVersion(sw, '/script.min.js', mainVer, "'");
+  sw = bumpVersion(sw, '/style.min.css', cssVer, "'");
+  if (deferredCssVer) sw = bumpVersion(sw, '/style-deferred.min.css', deferredCssVer, "'");
+  fs.writeFileSync(swPath, sw);
 }
 
 // ---------------------------------------------------------------------------
@@ -344,17 +486,21 @@ function inlineCriticalIntoHtml(criticalMin) {
 // ---------------------------------------------------------------------------
 
 (async () => {
-  console.log('• Building JavaScript bundles (code-split + minify)…');
-  const jsSizes = await buildJs();
-  console.log('• Minifying CSS…');
+  console.log('• Minifying CSS (split + minify)…');
   const cssSizes = await buildCss();
+  console.log('• Building JavaScript bundles (code-split + minify)…');
+  const jsSizes = await buildJs(cssSizes.deferredHash);
   console.log('• Extracting + inlining critical CSS…');
   const criticalMin = extractCriticalCss(readSrc('style.css'));
   inlineCriticalIntoHtml(criticalMin);
 
+  console.log('• Versioning HTML asset references (cache-busting)…');
+  versionHtmlAssets(jsSizes.versions.main, cssSizes.hash);
+  versionServiceWorker(jsSizes.versions.main, cssSizes.hash, cssSizes.deferredHash);
+
   console.log('\n================ Build summary ================');
   let jsRawTotal = 0, jsMinTotal = 0;
-  for (const [k, v] of Object.entries(jsSizes)) {
+  for (const [k, v] of Object.entries(jsSizes.sizes)) {
     jsRawTotal += v.raw; jsMinTotal += v.min;
     console.log(
       `  ${k.padEnd(28)} ${(v.raw / 1024).toFixed(1).padStart(7)} KB  ->  ${(v.min / 1024).toFixed(1).padStart(6)} KB`
@@ -366,6 +512,11 @@ function inlineCriticalIntoHtml(criticalMin) {
   console.log(
     `  ${'style.css'.padEnd(28)} ${(cssSizes.raw / 1024).toFixed(1).padStart(7)} KB  ->  ${(cssSizes.min / 1024).toFixed(1).padStart(6)} KB`
   );
+  if (cssSizes.deferredMin) {
+    console.log(
+      `  ${'style-deferred.min.css'.padEnd(28)} ${((cssSizes.raw) / 1024).toFixed(1).padStart(7)} KB  ->  ${(cssSizes.deferredMin / 1024).toFixed(1).padStart(6)} KB (lazy)`
+    );
+  }
   console.log(
     `  ${'critical.min.css (inlined)'.padEnd(28)} ${(criticalMin.length / 1024).toFixed(1).padStart(7)} KB`
   );
