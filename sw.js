@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.min.css?v=5e999e8d',
-  '/script.min.js?v=0a672fcb',
+  '/script.min.js?v=130b9ef2',
   '/manifest.json',
   '/favicon.ico',
   '/assets/icons/icon-192.png',
