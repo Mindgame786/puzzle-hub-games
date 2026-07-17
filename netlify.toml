@@ -34,6 +34,11 @@
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
+  for = "/favicon.ico"
+    [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
   for = "/script.min.js"
     [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
@@ -54,6 +59,11 @@
   for = "/*.html"
     [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/google159ef9242b8ed752.html"
+    [headers.values]
+    Cache-Control = "public, max-age=86400"
 
 # ---- SEO / ads / AI files: daily refresh ----
 [[headers]]

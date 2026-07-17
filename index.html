@@ -190,22 +190,49 @@ window.PH_CONFIG = window.PH_CONFIG || { env: 'production' };
   </div>
 </noscript>
 
-<!-- Application Shell Mount Target -->
+<!-- Application Shell Mount Target (Prerendered for instant FCP & LCP) -->
 <div id="app">
-  <div class="boot-screen" role="status" aria-label="Loading PuzzleHub">
-    <div class="boot-screen__mark brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M7.2 4h5.1c2.55 0 4.4 1.7 4.4 4.05S14.85 12.1 12.3 12.1H7.2V4z" fill="#fff" fill-opacity=".96"/>
-        <path d="M7.2 12.9h5.8c2.55 0 4.4 1.65 4.4 4.05S15.55 21 13 21H7.2v-8.1z" fill="#fff" fill-opacity=".82"/>
-        <circle cx="17.6" cy="8.05" r="1.65" fill="#fff" fill-opacity=".96"/>
-        <circle cx="18.35" cy="16.95" r="1.65" fill="#fff" fill-opacity=".82"/>
-      </svg>
+  <header class="app-header" role="banner">
+    <div class="app-header__inner">
+      <a class="app-logo" href="#/" aria-label="PuzzleHub Home">
+        <span class="app-logo__mark brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M7.2 4h5.1c2.55 0 4.4 1.7 4.4 4.05S14.85 12.1 12.3 12.1H7.2V4z" fill="#fff" fill-opacity="0.96"/><path d="M7.2 12.9h5.8c2.55 0 4.4 1.65 4.4 4.05S15.55 21 13 21H7.2v-8.1z" fill="#fff" fill-opacity="0.82"/><circle cx="17.6" cy="8.05" r="1.65" fill="#fff" fill-opacity="0.96"/><circle cx="18.35" cy="16.95" r="1.65" fill="#fff" fill-opacity="0.82"/></svg>
+        </span>
+        <span class="app-logo__text">
+          <span class="app-logo__name brand-wordmark">PuzzleHub</span>
+          <span class="app-logo__tag">Games</span>
+        </span>
+      </a>
+      <nav class="app-nav" aria-label="Primary">
+        <a class="app-nav__link active" href="#/">Games</a>
+        <a class="app-nav__link" href="#/leaderboard">Rankings</a>
+        <a class="app-nav__link" href="#/community">Community</a>
+        <a class="app-nav__link" href="#/blog">Blog</a>
+        <a class="app-nav__link" href="#/how-to-play">How to Play</a>
+      </nav>
+      <div class="app-header__actions">
+        <button class="btn btn-ghost btn-icon" type="button" aria-label="Toggle color theme">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="boot-screen__title">PuzzleHub</div>
-    <div class="boot-screen__bar">
-      <div class="boot-screen__fill"></div>
+  </header>
+  <main id="main-content" role="main">
+    <div class="container">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__badge">
+          <span aria-hidden="true">✨</span>
+          <span>Premium Daily Puzzles</span>
+        </div>
+        <h1 class="hero__title" id="hero-title">Puzzle your mind.</h1>
+        <p class="hero__subtitle">Premium crosswords, sudoku, 2048, word search, minesweeper, kakuro, nonograms, cryptogram & memory games built for focus and flow.</p>
+        <div class="hero__actions">
+          <a class="btn btn-primary btn-lg" href="#/game/sudoku">Play Daily Puzzle</a>
+          <a class="btn btn-secondary btn-lg" href="#games-section">Browse All Games</a>
+        </div>
+      </section>
     </div>
-  </div>
+  </main>
 </div>
 
 <script src="script.min.js" defer></script>
