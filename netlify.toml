@@ -48,6 +48,11 @@
     [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+[[headers]]
+  for = "/style-deferred.min.css"
+    [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
 # ---- Service worker: always fresh ----
 [[headers]]
   for = "/sw.js"

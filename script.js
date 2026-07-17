@@ -1576,6 +1576,10 @@ const Router = (() => {
   async function resolve() {
     const { path, handler, params } = parse();
 
+    // Load game/secondary-page CSS only when leaving the home view, so the
+    // initial paint never downloads unused CSS.
+    if (path && path !== '/' && window.ensureDeferredCss) window.ensureDeferredCss();
+
     // Cleanup previous page
     if (typeof currentCleanup === 'function') {
       try {
@@ -9428,6 +9432,20 @@ if (typeof window !== 'undefined') { window.ContactPage = ContactPage; }
 
   // Prefer bootstrap.js as entry; keep app.js as thin alias for bundle order
   window.PHBootstrap = { init: init, buildShell: buildShell };
+
+  // Deferred stylesheet (game + secondary-page CSS) — loaded on first
+  // navigation away from home so the initial home view never downloads CSS
+  // it doesn't use. The URL (with content hash) is baked in by build.js.
+  window.PH_DEFERRED_CSS = 'style-deferred.min.css';
+  function ensureDeferredCss() {
+    if (window.__ph_deferred_loaded) return;
+    window.__ph_deferred_loaded = true;
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = window.PH_DEFERRED_CSS || 'style-deferred.min.css';
+    document.head.appendChild(l);
+  }
+  window.ensureDeferredCss = ensureDeferredCss;
 
   // Boot AFTER the browser has painted the prerendered shell. The inline
   // critical CSS + prerendered hero let the largest contentful paint happen

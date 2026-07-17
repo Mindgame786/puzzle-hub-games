@@ -30,6 +30,9 @@
 /style.min.css
   Cache-Control: public, max-age=31536000, immutable
 
+/style-deferred.min.css
+  Cache-Control: public, max-age=31536000, immutable
+
 # ---- HTML: short, revalidating cache so updates roll out fast ----
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
