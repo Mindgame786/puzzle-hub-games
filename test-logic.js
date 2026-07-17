@@ -50,7 +50,10 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
   // ---- Load all game modules + secondary chunk ----
   const loadModule = (file) => {
-    const code = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    // Strip build-time ?v= cache-busting query (the real server ignores it;
+    // the on-disk filename has no query string).
+    const diskPath = file.split('?')[0];
+    const code = fs.readFileSync(path.join(__dirname, diskPath), 'utf8');
     const s = window.document.createElement('script');
     s.textContent = code;
     window.document.body.appendChild(s);

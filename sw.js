@@ -14,8 +14,8 @@ const CACHE_NAME = 'puzzlehub-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/style.min.css',
-  '/script.min.js',
+  '/style.min.css?v=5e999e8d',
+  '/script.min.js?v=0a672fcb',
   '/manifest.json',
   '/favicon.ico',
   '/assets/icons/icon-192.png',

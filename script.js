@@ -1847,7 +1847,10 @@ const Perf = (() => {
 
   /** Load a script once; resolves when executed */
   function loadScript(src) {
-    if (loaded.has(src)) return Promise.resolve();
+    // The cache-busting ?v= query is NOT part of the resource identity, so two
+    // URLs that differ only by version must be treated as the same script.
+    const key = String(src).split('?')[0];
+    if (loaded.has(key)) return Promise.resolve();
     return new Promise((resolve, reject) => {
       const existing = document.querySelector(`script[data-src="${src}"]`);
       if (existing) {
@@ -1859,7 +1862,7 @@ const Perf = (() => {
       s.src = src;
       s.async = true;
       s.dataset.src = src;
-      s.onload = () => { loaded.add(src); resolve(); };
+      s.onload = () => { loaded.add(key); resolve(); };
       s.onerror = reject;
       document.body.appendChild(s);
     });

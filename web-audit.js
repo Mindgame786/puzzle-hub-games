@@ -67,7 +67,10 @@ function ratio(fg, bg) {
   const uniqueRefs = [...new Set(assetRefs)];
   let assetOk = 0;
   for (const ref of uniqueRefs) {
-    if (exists(ref)) assetOk++;
+    // Strip build-time ?v= cache-busting query; the server ignores it and the
+    // on-disk file has no query string.
+    const diskRef = ref.split('?')[0];
+    if (exists(diskRef)) assetOk++;
     else fail(`Asset exists: ${ref}`, 'file not found');
   }
   if (assetOk === uniqueRefs.length) pass(`All HTML-referenced assets exist (${assetOk}/${uniqueRefs.length})`);
@@ -276,7 +279,7 @@ function ratio(fg, bg) {
 
   // Load all lazy chunks
   const loadMod = (file) => {
-    const code = read(file);
+    const code = read(file.split('?')[0]); // strip build-time ?v= cache-busting query
     const s = window.document.createElement('script');
     s.textContent = code;
     window.document.body.appendChild(s);
